@@ -9,7 +9,7 @@ A modern, full-featured attendance tracking system built with Flask — designed
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-2.3%2B-lightgrey?logo=flask)](https://flask.palletsprojects.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Deploy](https://img.shields.io/badge/Live-PythonAnywhere-yellow)](https://pythonanywhere.com)
+[![Live Demo](https://img.shields.io/badge/🌐_Live-Shazil.pythonanywhere.com-brightgreen)](https://Shazil.pythonanywhere.com)
 
 </div>
 
@@ -127,13 +127,11 @@ python app.py
 
 Open **http://127.0.0.1:5000** in your browser.
 
-### Default Login
-| Field | Value |
-|---|---|
-| Username | `Shazil` |
-| Password | `shazil786!` |
+### Login
 
-> ⚠️ **Change the default credentials** by setting `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` environment variables in production.
+Admin credentials are configured via environment variables and are **not stored in the source code**.
+
+> 🔒 Set `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` (bcrypt) as environment variables on your server. See [Environment Variables](#-environment-variables) for details.
 
 ---
 
