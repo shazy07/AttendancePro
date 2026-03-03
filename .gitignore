@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Database
+*.db
+
+# Reports output
+reports/*.pdf
+reports/*.csv
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="AttendPro — Admin Login" />
+    <title>AttendPro — Login</title>
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+
+    <style>
+        /* ── Inherit the app's design tokens ── */
+        :root {
+            --purple: #7c3aed;
+            --cyan: #06b6d4;
+            --green: #10b981;
+            --red: #ef4444;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --trans: 0.3s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg: #050a18;
+            --glass: rgba(255, 255, 255, 0.06);
+            --glass-hover: rgba(255, 255, 255, 0.10);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --text: #f0f4ff;
+            --text-secondary: #94a3b8;
+            --input-bg: rgba(255, 255, 255, 0.06);
+            --input-border: rgba(255, 255, 255, 0.15);
+            --shadow: 0 8px 32px rgba(0, 0, 0, .55);
+            --orb1: rgba(124, 58, 237, 0.35);
+            --orb2: rgba(6, 182, 212, 0.25);
+            --orb3: rgba(16, 185, 129, 0.18);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 15px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* ── Ambient Orbs ── */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+            animation: orb-drift 20s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            width: 700px;
+            height: 700px;
+            top: -200px;
+            right: -150px;
+            background: var(--orb1);
+            animation-duration: 22s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            bottom: -150px;
+            left: -100px;
+            background: var(--orb2);
+            animation-duration: 18s;
+        }
+
+        .orb-3 {
+            width: 400px;
+            height: 400px;
+            top: 50%;
+            left: 40%;
+            background: var(--orb3);
+            animation-duration: 25s;
+        }
+
+        @keyframes orb-drift {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(40px, 30px) scale(1.08);
+            }
+        }
+
+        /* ── Login Container ── */
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+            padding: 0 20px;
+            animation: slideUp 0.6s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Brand Header ── */
+        .login-brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-brand-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--purple), var(--cyan));
+            border-radius: var(--radius);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: #fff;
+            box-shadow: 0 8px 30px rgba(124, 58, 237, .45);
+            margin-bottom: 16px;
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 8px 30px rgba(124, 58, 237, .45);
+            }
+
+            50% {
+                box-shadow: 0 8px 50px rgba(124, 58, 237, .65), 0 0 80px rgba(6, 182, 212, .2);
+            }
+        }
+
+        .login-brand h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--purple), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-brand p {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        /* ── Glass Card ── */
+        .login-card {
+            background: var(--glass);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 32px 28px;
+        }
+
+        /* ── Form ── */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 17px;
+            transition: color var(--trans);
+        }
+
+        .input-wrap input {
+            width: 100%;
+            padding: 12px 14px 12px 44px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: all var(--trans);
+        }
+
+        .input-wrap input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .input-wrap input:focus {
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, .15);
+        }
+
+        .input-wrap input:focus+i,
+        .input-wrap input:focus~i {
+            color: var(--purple);
+        }
+
+        /* Password toggle */
+        .toggle-password {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 17px;
+            padding: 0;
+            transition: color var(--trans);
+        }
+
+        .toggle-password:hover {
+            color: var(--purple);
+        }
+
+        /* ── Button ── */
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--purple), var(--cyan));
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all var(--trans);
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+            opacity: 0;
+            transition: opacity var(--trans);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(124, 58, 237, .45);
+        }
+
+        .btn-login:hover::before {
+            opacity: 1;
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        .btn-login.loading .spinner {
+            display: block;
+        }
+
+        .btn-login.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── Error Message ── */
+        .error-msg {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--radius-sm);
+            color: var(--red);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            animation: shake 0.4s ease;
+        }
+
+        .error-msg.visible {
+            display: flex;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-6px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(6px);
+            }
+        }
+
+        /* ── Footer ── */
+        .login-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .login-footer i {
+            color: var(--purple);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Ambient orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="login-wrapper">
+        <!-- Brand -->
+        <div class="login-brand">
+            <div class="login-brand-icon"><i class="ri-time-line"></i></div>
+            <h1>AttendPro</h1>
+            <p>Admin Portal — Secure Access</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="login-card">
+            <form id="loginForm" method="POST" action="/login" autocomplete="on">
+                <!-- Error -->
+                <div class="error-msg" id="errorMsg">
+                    <i class="ri-error-warning-line"></i>
+                    <span id="errorText">Invalid credentials</span>
+                </div>
+
+                <!-- Username -->
+                <div class="form-group">
+                    <label for="username">Admin Username</label>
+                    <div class="input-wrap">
+                        <input type="text" id="username" name="username" placeholder="Enter admin name" required
+                            autofocus />
+                        <i class="ri-user-3-line"></i>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <input type="password" id="password" name="password" placeholder="Enter password" required />
+                        <i class="ri-lock-line"></i>
+                        <button type="button" class="toggle-password" onclick="togglePwd()" tabindex="-1">
+                            <i class="ri-eye-off-line" id="pwdIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="btn-login" id="btnLogin">
+                    <span class="btn-text"><i class="ri-login-box-line"></i> Sign In</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            <i class="ri-shield-check-line"></i> Protected admin access only
+        </div>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        function togglePwd() {
+            const inp = document.getElementById('password');
+            const ico = document.getElementById('pwdIcon');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                ico.className = 'ri-eye-line';
+            } else {
+                inp.type = 'password';
+                ico.className = 'ri-eye-off-line';
+            }
+        }
+
+        // Form submit
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnLogin');
+            const errDiv = document.getElementById('errorMsg');
+            const errText = document.getElementById('errorText');
+
+            btn.classList.add('loading');
+            errDiv.classList.remove('visible');
+
+            const formData = new FormData(this);
+
+            fetch('/login', {
+                method: 'POST',
+                body: formData
+            })
+                .then(r => r.json())
+                .then(data => {
+                    btn.classList.remove('loading');
+                    if (data.ok) {
+                        window.location.href = '/';
+                    } else {
+                        errText.textContent = data.error || 'Invalid credentials';
+                        errDiv.classList.add('visible');
+                    }
+                })
+                .catch(() => {
+                    btn.classList.remove('loading');
+                    errText.textContent = 'Connection error. Please try again.';
+                    errDiv.classList.add('visible');
+                });
+        });
+
+        // Show error from server redirect (query param)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error')) {
+            document.getElementById('errorText').textContent = urlParams.get('error');
+            document.getElementById('errorMsg').classList.add('visible');
+        }
+    </script>
+</body>
+
+</html>

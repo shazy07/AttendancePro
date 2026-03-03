@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: attendancepro
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    plan: free
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: Shazil
+      - key: ADMIN_PASSWORD_HASH
+        sync: false   # set manually in Render dashboard
+      - key: PYTHON_VERSION
+        value: "3.11.6"

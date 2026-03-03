@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Elite Attendance & Payroll Management System" />
+  <title>AttendPro — Attendance & Payroll</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Lottie -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+
+<body>
+
+  <!-- Ambient background orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="ri-time-line"></i></div>
+      <div class="brand-text">
+        <span class="brand-name">AttendPro</span>
+        <span class="brand-sub" id="companyName">Loading…</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#dashboard" class="nav-item active" data-page="dashboard">
+        <i class="ri-dashboard-3-line"></i><span>Dashboard</span>
+      </a>
+      <a href="#employees" class="nav-item" data-page="employees">
+        <i class="ri-team-line"></i><span>Employees</span>
+      </a>
+      <a href="#holidays" class="nav-item" data-page="holidays">
+        <i class="ri-calendar-event-line"></i><span>Holidays</span>
+      </a>
+      <a href="#reports" class="nav-item" data-page="reports">
+        <i class="ri-file-chart-line"></i><span>Report Hub</span>
+      </a>
+      <a href="#settings" class="nav-item" data-page="settings">
+        <i class="ri-settings-4-line"></i><span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
+        <i class="ri-moon-line" id="themeIcon"></i>
+      </button>
+      <div class="server-time" id="serverTime">—</div>
+      <a href="/logout" class="theme-toggle" title="Logout" style="text-decoration:none;margin-left:auto;">
+        <i class="ri-logout-box-r-line"></i>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main-content">
+
+    <!-- Header -->
+    <header class="top-bar">
+      <button class="menu-toggle" id="menuToggle"><i class="ri-menu-line"></i></button>
+      <div class="page-title" id="pageTitle">Dashboard</div>
+      <div class="header-actions">
+        <div class="ramadan-pill" id="ramadanPill" style="display:none">
+          <i class="ri-moon-fill"></i> Ramadan Mode
+        </div>
+        <div class="live-clock" id="liveClock">00:00:00</div>
+      </div>
+    </header>
+
+    <!-- ══ DASHBOARD ══ -->
+    <section class="page" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-h1">Today's Overview</h1>
+          <p class="page-sub" id="todayLabel">Loading…</p>
+        </div>
+        <button class="btn btn-primary" onclick="Dashboard.refresh()">
+          <i class="ri-refresh-line"></i> Refresh
+        </button>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="ri-checkbox-circle-line"></i></div>
+          <div class="stat-val" id="statPresent">—</div>
+          <div class="stat-lbl">On Track</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon"><i class="ri-time-line"></i></div>
+          <div class="stat-val" id="statLate">—</div>
+          <div class="stat-lbl">In Debt</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="ri-close-circle-line"></i></div>
+          <div class="stat-val" id="statAbsent">—</div>
+          <div class="stat-lbl">Absent</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="ri-calendar-check-line"></i></div>
+          <div class="stat-val" id="statOff">—</div>
+          <div class="stat-lbl">Day Off / Holiday</div>
+        </div>
+      </div>
+
+      <!-- Employee status grid -->
+      <div class="section-header">
+        <h2 class="section-title">Employee Status</h2>
+        <input class="search-box" id="empSearch" type="text" placeholder="Search employee…"
+          oninput="Dashboard.filter(this.value)" />
+      </div>
+      <div class="employee-grid" id="employeeGrid">
+        <div class="loading-ring">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ EMPLOYEES ══ -->
+    <section class="page" id="page-employees" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-h1">Employees</h1>
+          <p class="page-sub">Manage your team</p>
+        </div>
+        <button class="btn btn-primary" onclick="Employees.openAdd()">
+          <i class="ri-user-add-line"></i> Add Employee
+        </button>
+      </div>
+      <div class="glass-card" style="overflow:hidden">
+        <table class="data-table" id="employeeTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Designation</th>
+              <th>Department</th>
+              <th>Contact</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="employeeTbody">
+            <tr>
+              <td colspan="5" class="tbl-empty">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══ HOLIDAYS ══ -->
+    <section class="page" id="page-holidays" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-h1">Holiday Management</h1>
+          <p class="page-sub">Public holidays & Ramadan mode</p>
+        </div>
+        <button class="btn btn-primary" onclick="Holidays.openAdd()">
+          <i class="ri-calendar-2-line"></i> Mark Holiday
+        </button>
+      </div>
+
+      <!-- Ramadan toggle -->
+      <div class="glass-card ramadan-card">
+        <div class="ramadan-info">
+          <div class="ramadan-icon"><i class="ri-moon-fill"></i></div>
+          <div>
+            <div class="ramadan-title">Ramadan Mode</div>
+            <div class="ramadan-desc">Switches daily goal from <b>11.5 hrs</b> (9am–8:30pm) to <b>8.5 hrs</b>
+              (9am–5:30pm)</div>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="ramadanToggle" onchange="Holidays.toggleRamadan(this.checked)" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- Calendar + List -->
+      <div class="holidays-layout">
+        <div class="glass-card holiday-list-card">
+          <div class="section-header">
+            <h2 class="section-title">Marked Holidays</h2>
+            <select id="holidayYearFilter" onchange="Holidays.load()" class="mini-select">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+          <div id="holidayList" class="holiday-list">Loading…</div>
+        </div>
+        <div class="glass-card">
+          <h2 class="section-title" style="margin-bottom:16px">Friday Logic</h2>
+          <div class="info-row"><i class="ri-checkbox-circle-fill" style="color:var(--green)"></i>Every Friday is
+            automatically a <b>Weekly Off</b></div>
+          <div class="info-row"><i class="ri-information-line" style="color:var(--cyan)"></i>No debt or short-hours
+            counted on Fridays</div>
+          <div class="info-row"><i class="ri-star-line" style="color:var(--amber)"></i>Holiday work earns <b>1.5×–2×</b>
+            overtime pay</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ REPORTS ══ -->
+    <section class="page" id="page-reports" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-h1">Report Hub</h1>
+          <p class="page-sub">Generate beautiful reports on demand</p>
+        </div>
+      </div>
+
+      <div class="report-cards">
+        <!-- Daily Pulse -->
+        <div class="glass-card report-card">
+          <div class="report-icon" style="background:linear-gradient(135deg,#7c3aed,#06b6d4)">
+            <i class="ri-pulse-line"></i>
+          </div>
+          <h3 class="report-title">Daily Pulse</h3>
+          <p class="report-desc">Instant snapshot — who's in, who's late, and who's absent right now.</p>
+          <button class="btn btn-primary btn-full" onclick="Reports.dailyPulse()" id="btnDailyPulse">
+            <i class="ri-download-line"></i> Generate PDF
+          </button>
+        </div>
+
+        <!-- Employee Deep-Dive -->
+        <div class="glass-card report-card">
+          <div class="report-icon" style="background:linear-gradient(135deg,#10b981,#06b6d4)">
+            <i class="ri-user-search-line"></i>
+          </div>
+          <h3 class="report-title">Employee Deep-Dive</h3>
+          <p class="report-desc">One-page performance resume for any employee, any month.</p>
+          <select class="form-select" id="reportEmpSel" style="margin-bottom:8px">
+            <option value="">Select employee…</option>
+          </select>
+          <input type="month" class="form-input" id="reportMonth" style="margin-bottom:12px" />
+          <button class="btn btn-primary btn-full" onclick="Reports.deepDive()" id="btnDeepDive">
+            <i class="ri-download-line"></i> Generate PDF
+          </button>
+        </div>
+
+        <!-- Monthly Pulse -->
+        <div class="glass-card report-card">
+          <div class="report-icon" style="background:linear-gradient(135deg,#7c3aed,#ec4899)">
+            <i class="ri-calendar-todo-line"></i>
+          </div>
+          <h3 class="report-title">Monthly Pulse</h3>
+          <p class="report-desc">Full team summary — attendance & hours for the selected month.</p>
+          <input type="month" class="form-input" id="reportMonthlyPulseMonth" style="margin-bottom:12px" />
+          <button class="btn btn-primary btn-full" onclick="Reports.monthlyPulse()" id="btnMonthlyPulse">
+            <i class="ri-download-line"></i> Generate PDF
+          </button>
+        </div>
+
+        <!-- Company Ledger -->
+        <div class="glass-card report-card">
+          <div class="report-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">
+            <i class="ri-book-2-line"></i>
+          </div>
+          <h3 class="report-title">Company Ledger</h3>
+          <p class="report-desc">Master sheet — total worked hours & debt for last 3 months.</p>
+          <button class="btn btn-warning btn-full" onclick="Reports.companyLedger()" id="btnLedger">
+            <i class="ri-download-line"></i> Generate PDF + CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="glass-card" style="margin-top:24px">
+        <h2 class="section-title" style="margin-bottom:16px">Email Automation</h2>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:12px">
+          A full attendance summary is automatically sent via email every day at <b>9:00 PM</b>.<br />
+          Configure the email credentials in <a href="#settings" class="link">Settings</a>.
+        </p>
+        <button class="btn btn-outline" onclick="Reports.testEmail()"><i class="ri-mail-send-line"></i> Send Test Email
+          Now</button>
+      </div>
+    </section>
+
+    <!-- ══ SETTINGS ══ -->
+    <section class="page" id="page-settings" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-h1">Settings</h1>
+          <p class="page-sub">Configure shift, email & security</p>
+        </div>
+        <button class="btn btn-primary" onclick="Settings.save()"><i class="ri-save-line"></i> Save All</button>
+      </div>
+      <div class="settings-grid">
+
+        <div class="glass-card">
+          <h3 class="card-title"><i class="ri-building-line"></i> Company</h3>
+          <label class="form-label">Company Name</label>
+          <input class="form-input" id="s_company_name" type="text" />
+        </div>
+
+        <div class="glass-card">
+          <h3 class="card-title"><i class="ri-time-line"></i> Shift Hours</h3>
+          <label class="form-label">Standard Start</label>
+          <input class="form-input" id="s_standard_shift_start" type="time" />
+          <label class="form-label">Standard End</label>
+          <input class="form-input" id="s_standard_shift_end" type="time" />
+          <label class="form-label">Ramadan End</label>
+          <input class="form-input" id="s_ramadan_shift_end" type="time" />
+        </div>
+
+        <div class="glass-card">
+          <h3 class="card-title"><i class="ri-mail-line"></i> Email Automation</h3>
+          <label class="form-label">Sender Email</label>
+          <input class="form-input" id="s_email_sender" type="email" />
+          <label class="form-label">App Password</label>
+          <input class="form-input" id="s_email_password" type="password" placeholder="Gmail App Password" />
+          <label class="form-label">Recipients (comma-separated)</label>
+          <input class="form-input" id="s_email_recipients" type="text" />
+          <label class="form-label">SMTP Host</label>
+          <input class="form-input" id="s_smtp_host" type="text" />
+          <label class="form-label">SMTP Port</label>
+          <input class="form-input" id="s_smtp_port" type="number" />
+        </div>
+
+        <div class="glass-card">
+          <h3 class="card-title"><i class="ri-shield-check-line"></i> Device Lock (optional)</h3>
+          <p class="hint-text">Only allow clock-ins from the specified IP subnet. Leave blank to disable.</p>
+          <label class="form-label">Allowed IP Subnet (e.g. 192.168.1.)</label>
+          <input class="form-input" id="s_allowed_ip_subnet" type="text" placeholder="192.168.1." />
+        </div>
+
+        <div class="glass-card">
+          <h3 class="card-title"><i class="ri-shortcut-line"></i> Desktop Access</h3>
+          <p class="hint-text">Create a shortcut on your desktop for quick access.</p>
+          <button class="btn btn-outline btn-full" onclick="Settings.createShortcut()">
+            <i class="ri-external-link-line"></i> Create Desktop Shortcut
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══ Modals ══ -->
+  <!-- Employee Modal -->
+  <div class="modal-overlay" id="empModal" style="display:none">
+    <div class="modal glass-card">
+      <div class="modal-header">
+        <h3 id="empModalTitle">Add Employee</h3>
+        <button class="modal-close" onclick="Employees.closeModal()"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="empId" />
+        <label class="form-label">Full Name *</label>
+        <input class="form-input" id="empName" type="text" placeholder="Ahmed Ali" />
+        <label class="form-label">Designation</label>
+        <input class="form-input" id="empDesig" type="text" placeholder="Software Engineer" />
+        <label class="form-label">Department</label>
+        <input class="form-input" id="empDept" type="text" placeholder="IT" />
+        <label class="form-label">Email</label>
+        <input class="form-input" id="empEmail" type="email" placeholder="email@company.com" />
+        <label class="form-label">Phone</label>
+        <input class="form-input" id="empPhone" type="tel" placeholder="+92-300-0000000" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="Employees.closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="Employees.save()">Save Employee</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Holiday Modal -->
+  <div class="modal-overlay" id="holModal" style="display:none">
+    <div class="modal glass-card">
+      <div class="modal-header">
+        <h3>Mark Holiday</h3>
+        <button class="modal-close" onclick="Holidays.closeModal()"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">Date *</label>
+        <input class="form-input" id="holDate" type="date" />
+        <label class="form-label">Quick Presets</label>
+        <select class="form-select" id="holPresets" onchange="document.getElementById('holName').value = this.value">
+          <option value="">-- Select Preset --</option>
+          <option value="Eid-ul-Fitr">Eid-ul-Fitr</option>
+          <option value="Eid-ul-Adha">Eid-ul-Adha</option>
+          <option value="Ashura">Ashura</option>
+          <option value="Independence Day">Independence Day (14 Aug)</option>
+          <option value="Kashmir Day">Kashmir Day (5 Feb)</option>
+          <option value="Pakistan Day">Pakistan Day (23 Mar)</option>
+          <option value="Labour Day">Labour Day (1 May)</option>
+          <option value="Iqbal Day">Iqbal Day (9 Nov)</option>
+          <option value="Quaid Day / Christmas">Quaid Day / Christmas (25 Dec)</option>
+          <option value="Milad un-Nabi">Milad un-Nabi</option>
+          <option value="Local Holiday">Local Holiday</option>
+          <option value="Company Event">Company Event</option>
+        </select>
+        <label class="form-label">Holiday Name *</label>
+        <input class="form-input" id="holName" type="text" placeholder="Eid ul-Fitr" />
+        <label class="form-label">Overtime Multiplier (if worked)</label>
+        <select class="form-select" id="holMult">
+          <option value="1.5">1.5× — Time-and-a-half</option>
+          <option value="2.0">2.0× — Double time</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="Holidays.closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="Holidays.save()">Mark Holiday</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Attendance Modal -->
+  <div class="modal-overlay" id="manualModal" style="display:none">
+    <div class="modal glass-card">
+      <div class="modal-header">
+        <h3 id="manualModalTitle">Edit Attendance</h3>
+        <button class="modal-close" onclick="closeManualModal()"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="manualEmpId" />
+        <label class="form-label">Date</label>
+        <input class="form-input" id="manualDate" type="date" />
+        <label class="form-label">Clock In Time</label>
+        <input class="form-input" id="manualClockIn" type="time" />
+        <label class="form-label">Clock Out Time</label>
+        <input class="form-input" id="manualClockOut" type="time" />
+        <label class="form-label">Status Override</label>
+        <select class="form-select" id="manualStatus">
+          <option value="present">Present</option>
+          <option value="absent">Absent</option>
+          <option value="weekly_off">Weekly Off</option>
+          <option value="holiday">Holiday</option>
+        </select>
+        <label class="form-label">Notes</label>
+        <input class="form-input" id="manualNotes" type="text" placeholder="e.g. Work from home" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeManualModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveManual()">Save Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lottie success overlay -->
+  <div class="lottie-overlay" id="lottieOverlay" style="display:none">
+    <div id="lottieContainer"></div>
+    <div class="lottie-msg" id="lottieMsg">Done!</div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/main.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+  <script src="/static/js/employees.js"></script>
+  <script src="/static/js/holidays.js"></script>
+  <script src="/static/js/reports.js"></script>
+  <script src="/static/js/settings.js"></script>
+</body>
+
+</html>
