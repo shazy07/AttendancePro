@@ -266,6 +266,98 @@ def clock_out():
                'debt_minutes': debt_m, 'required_hours': req_h})
 
 
+@app.route('/api/attendance/bulk-entry', methods=['POST'])
+@login_required
+def bulk_entry():
+    """Bulk enter clock-in or clock-out times for multiple employees at once."""
+    d       = request.json or {}
+    mode    = d.get('mode')          # 'clock_in' or 'clock_out'
+    dt      = d.get('date', today_str())
+    entries = d.get('entries', [])    # [{ employee_id, time }, ...]
+
+    if mode not in ('clock_in', 'clock_out'):
+        return err('mode must be "clock_in" or "clock_out"')
+    if not entries:
+        return err('No entries provided')
+
+    req_hours = pl.get_required_hours(dt)
+    dtype, holiday = pl.get_day_type(dt)
+    ot_mult     = 1.0
+    is_hol_work = 0
+    status      = 'present'
+
+    if dtype == 'weekly_off':
+        status = 'weekly_off'
+    elif dtype == 'holiday':
+        is_hol_work = 1
+        ot_mult     = float(holiday['overtime_multiplier'])
+        status      = 'present'
+
+    conn    = db.get_db()
+    saved   = 0
+    skipped = 0
+    errors  = []
+
+    for entry in entries:
+        eid      = entry.get('employee_id')
+        time_str = (entry.get('time') or '').strip()
+        if not eid or not time_str:
+            skipped += 1
+            continue
+
+        full_dt = f"{dt}T{time_str}:00"   # e.g. 2026-03-05T09:15:00
+
+        try:
+            if mode == 'clock_in':
+                conn.execute(
+                    '''INSERT INTO attendance
+                       (employee_id,date,clock_in,required_hours,status,
+                        is_holiday_work,overtime_multiplier)
+                       VALUES (?,?,?,?,?,?,?)
+                       ON CONFLICT(employee_id,date) DO UPDATE SET
+                       clock_in=excluded.clock_in, status=excluded.status,
+                       required_hours=excluded.required_hours''',
+                    (eid, dt, full_dt, req_hours, status, is_hol_work, ot_mult)
+                )
+                saved += 1
+
+            else:  # clock_out
+                row = db.row_to_dict(
+                    conn.execute(
+                        'SELECT * FROM attendance WHERE employee_id=? AND date=?',
+                        (eid, dt)
+                    ).fetchone()
+                )
+                ci_val = row.get('clock_in') if row else None
+                if not ci_val:
+                    errors.append(f"Employee {eid}: no clock-in found")
+                    continue
+
+                ci_str   = str(ci_val).split('.')[0].replace(' ', 'T').partition('+')[0]
+                ci_dt    = datetime.fromisoformat(ci_str)
+                co_dt    = datetime.fromisoformat(full_dt)
+                delta    = co_dt - ci_dt
+                h_float  = float(delta.total_seconds()) / 3600.0
+                total_h  = float(f"{h_float:.4f}")
+                req_h    = float(row.get('required_hours') or 0.0)
+                debt_m   = int((total_h - req_h) * 60)
+
+                conn.execute(
+                    '''UPDATE attendance
+                       SET clock_out=?, total_hours=?, debt_minutes=?, status=?
+                       WHERE employee_id=? AND date=?''',
+                    (full_dt, total_h, debt_m, 'present', eid, dt)
+                )
+                saved += 1
+
+        except Exception as exc:
+            errors.append(f"Employee {eid}: {str(exc)}")
+
+    conn.commit()
+    conn.close()
+    return ok({'saved': saved, 'skipped': skipped, 'errors': errors})
+
+
 @app.route('/api/attendance/status', methods=['GET'])
 @login_required
 def attendance_status():

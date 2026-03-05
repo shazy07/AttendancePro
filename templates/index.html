@@ -89,9 +89,17 @@
           <h1 class="page-h1">Today's Overview</h1>
           <p class="page-sub" id="todayLabel">Loading…</p>
         </div>
-        <button class="btn btn-primary" onclick="Dashboard.refresh()">
-          <i class="ri-refresh-line"></i> Refresh
-        </button>
+        <div class="bulk-actions">
+          <button class="btn btn-bulk-in" onclick="Dashboard.bulkClockIn()" id="btnBulkIn">
+            <i class="ri-login-box-line"></i> ⚡ Bulk Clock In
+          </button>
+          <button class="btn btn-bulk-out" onclick="Dashboard.bulkClockOut()" id="btnBulkOut">
+            <i class="ri-logout-box-line"></i> ⚡ Bulk Clock Out
+          </button>
+          <button class="btn btn-primary" onclick="Dashboard.refresh()">
+            <i class="ri-refresh-line"></i> Refresh
+          </button>
+        </div>
       </div>
 
       <!-- Summary cards -->
@@ -451,6 +459,104 @@
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeManualModal()">Cancel</button>
         <button class="btn btn-primary" onclick="saveManual()">Save Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Entry Modal -->
+  <div class="modal-overlay" id="bulkModal" style="display:none">
+    <div class="modal glass-card" style="width:min(620px,95vw)">
+      <div class="modal-header">
+        <h3 id="bulkModalTitle">Bulk Clock In</h3>
+        <button class="modal-close" onclick="Dashboard.closeBulkModal()"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px">
+            <label class="form-label">Date</label>
+            <input class="form-input" id="bulkDate" type="date" />
+          </div>
+          <div style="flex:1;min-width:200px">
+            <label class="form-label">Fill All With</label>
+            <div style="display:flex;gap:6px">
+              <input class="form-input" id="bulkFillTime" type="time" style="flex:1" />
+              <button class="btn btn-outline" onclick="Dashboard.fillAllTimes()" style="white-space:nowrap">
+                <i class="ri-file-copy-line"></i> Apply
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="bulk-table-wrap">
+          <table class="data-table" id="bulkTable">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th>Employee</th>
+                <th style="width:140px">Time</th>
+              </tr>
+            </thead>
+            <tbody id="bulkTbody">
+              <tr>
+                <td colspan="3" class="tbl-empty">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="Dashboard.closeBulkModal()">Cancel</button>
+        <button class="btn btn-primary" id="bulkSaveBtn" onclick="Dashboard.submitBulkEntry()">
+          <i class="ri-save-line"></i> Save All
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Entry Modal -->
+  <div class="modal-overlay" id="bulkModal" style="display:none">
+    <div class="modal glass-card" style="width:min(620px,95vw)">
+      <div class="modal-header">
+        <h3 id="bulkModalTitle">Bulk Clock In</h3>
+        <button class="modal-close" onclick="Dashboard.closeBulkModal()"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px">
+            <label class="form-label">Date</label>
+            <input class="form-input" id="bulkDate" type="date" />
+          </div>
+          <div style="flex:1;min-width:200px">
+            <label class="form-label">Fill All With</label>
+            <div style="display:flex;gap:6px">
+              <input class="form-input" id="bulkFillTime" type="time" style="flex:1" />
+              <button class="btn btn-outline" onclick="Dashboard.fillAllTimes()" style="white-space:nowrap">
+                <i class="ri-file-copy-line"></i> Apply
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="bulk-table-wrap">
+          <table class="data-table" id="bulkTable">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th>Employee</th>
+                <th style="width:140px">Time</th>
+              </tr>
+            </thead>
+            <tbody id="bulkTbody">
+              <tr>
+                <td colspan="3" class="tbl-empty">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="Dashboard.closeBulkModal()">Cancel</button>
+        <button class="btn btn-primary" id="bulkSaveBtn" onclick="Dashboard.submitBulkEntry()">
+          <i class="ri-save-line"></i> Save All
+        </button>
       </div>
     </div>
   </div>

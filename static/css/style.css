@@ -877,6 +877,55 @@ body {
   data-ontent: '...';
 }
 
+/* ── Bulk Actions ── */
+.bulk-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-bulk-in {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, .3);
+  font-weight: 700;
+}
+
+.btn-bulk-in:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(16, 185, 129, .45);
+}
+
+.btn-bulk-out {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, .3);
+  font-weight: 700;
+}
+
+.btn-bulk-out:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(245, 158, 11, .45);
+}
+
+.bulk-table-wrap {
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+.bulk-table-wrap .data-table tbody td {
+  padding: 8px 12px;
+}
+
+.bulk-time-input {
+  width: 100%;
+  padding: 6px 8px !important;
+  font-size: 13px;
+}
+
 .btn:disabled {
   opacity: .5;
   cursor: not-allowed;
