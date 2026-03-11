@@ -171,7 +171,7 @@ def _get_workdays_in_month(month_str):
     workdays = []
     for day in range(1, last_day + 1):
         d = date(year, mon, day)
-        if d > today:
+        if d >= today:
             break
         day_type, _ = get_day_type(d)
         if day_type == 'workday':
