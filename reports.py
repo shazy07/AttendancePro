@@ -185,7 +185,7 @@ def generate_monthly_pulse(month=None):
             e['designation'],
             str(s['days_present']),
             str(s['days_absent']),
-            f"{s['total_worked_hours']:.1f}h",
+            f"{int(s['total_worked_hours'])}h {int((s['total_worked_hours'] % 1) * 60):02d}m",
             ds,
             "Good" if dm >= 0 else "Under",
             color

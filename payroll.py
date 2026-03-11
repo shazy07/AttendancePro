@@ -163,15 +163,29 @@ def get_live_status(employee_id, today_str=None):
 # ── monthly summary ────────────────────────────────────────────────────────────
 
 def _get_workdays_in_month(month_str):
-    """Return list of workday date objects in the given 'YYYY-MM' month, up to today."""
+    """Return list of workday date objects in the given 'YYYY-MM' month, up to yesterday
+    (or up to today if today's shift end time has already passed)."""
     import calendar
     year, mon = int(month_str[:4]), int(month_str[5:7])
     _, last_day = calendar.monthrange(year, mon)
     today = date.today()
+    now   = datetime.now()
+
+    # Determine if today's shift is over
+    if db.get_setting('ramadan_mode', 'false').lower() == 'true':
+        shift_end_str = db.get_setting('ramadan_shift_end', '17:30')
+    else:
+        shift_end_str = db.get_setting('standard_shift_end', '20:30')
+    shift_h, shift_m = map(int, shift_end_str.split(':'))
+    shift_over_today = now.hour > shift_h or (now.hour == shift_h and now.minute >= shift_m)
+
+    # Include today only if shift is over; otherwise stop at yesterday
+    cutoff = today if shift_over_today else today - timedelta(days=1)
+
     workdays = []
     for day in range(1, last_day + 1):
         d = date(year, mon, day)
-        if d >= today:
+        if d > cutoff:
             break
         day_type, _ = get_day_type(d)
         if day_type == 'workday':
