@@ -210,15 +210,15 @@ def get_monthly_summary(employee_id, month):
     recorded_dates = {r['date'] for r in rows}
 
     # Find the employee's first record date in this month (or ever)
-    # Only count absences from this date onwards — before it, the system
-    # wasn't tracking this employee yet
     first_record_date = min(recorded_dates) if recorded_dates else None
 
-    # All workdays in the month up to the cutoff
+    # First, fix existing DB records: if an explicit absent record has 0 debt, fix it
+    for r in rows:
+        if r['status'] == 'absent' and r.get('debt_minutes') == 0:
+            r['debt_minutes'] = -int(r.get('required_hours', 0) * 60)
+
+    # Find all workdays in the month up to the cutoff
     workdays = _get_workdays_in_month(month)
-    unrecorded_absent_days = 0
-    unrecorded_debt_minutes = 0
-    unrecorded_req_hours = 0.0
 
     for wd in workdays:
         wd_str = wd.strftime('%Y-%m-%d')
@@ -227,18 +227,30 @@ def get_monthly_summary(employee_id, month):
             # first record (i.e. they were already in the system)
             if first_record_date and wd_str >= first_record_date:
                 req_h = get_required_hours(wd)
-                unrecorded_absent_days += 1
-                unrecorded_debt_minutes -= int(req_h * 60)  # negative = owes time
-                unrecorded_req_hours += req_h
+                rows.append({
+                    'id': None,
+                    'employee_id': employee_id,
+                    'date': wd_str,
+                    'clock_in': None,
+                    'clock_out': None,
+                    'total_hours': 0.0,
+                    'required_hours': req_h,
+                    'status': 'absent',
+                    'debt_minutes': -int(req_h * 60),
+                    'is_holiday_work': 0,
+                    'overtime_multiplier': 1.0,
+                    'notes': ''
+                })
 
-    # Sum from existing records
-    total_req    = sum(r['required_hours'] for r in rows) + unrecorded_req_hours
+    # Sort rows chronologically so reports match perfectly
+    rows.sort(key=lambda x: x['date'])
+
+    # Calculate totals directly from the unified rows list
+    total_req    = sum(r['required_hours'] for r in rows)
     total_worked = sum(r['total_hours'] for r in rows)
-    net_debt_m   = sum(r['debt_minutes'] for r in rows) + unrecorded_debt_minutes
-
-    # Count absent from existing records + unrecorded workdays
+    net_debt_m   = sum(r['debt_minutes'] for r in rows)
+    
     days_absent_recorded = sum(1 for r in rows if r['status'] == 'absent')
-    total_absent = days_absent_recorded + unrecorded_absent_days
 
     surplus_h = round(max(0,  net_debt_m) / 60, 2)
     short_h   = round(max(0, -net_debt_m) / 60, 2)
@@ -250,7 +262,7 @@ def get_monthly_summary(employee_id, month):
         'employee':             emp,
         'month':                month,
         'days_present':         sum(1 for r in rows if r['status'] == 'present'),
-        'days_absent':          total_absent,
+        'days_absent':          days_absent_recorded,
         'days_off':             sum(1 for r in rows if r['status'] in ('weekly_off', 'holiday')),
         'total_required_hours': total_required,
         'total_worked_hours':   total_actual,
