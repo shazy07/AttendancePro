@@ -209,7 +209,12 @@ def get_monthly_summary(employee_id, month):
     # Build a set of dates that have attendance records
     recorded_dates = {r['date'] for r in rows}
 
-    # Find all workdays in the month (up to today) and identify unrecorded ones
+    # Find the employee's first record date in this month (or ever)
+    # Only count absences from this date onwards — before it, the system
+    # wasn't tracking this employee yet
+    first_record_date = min(recorded_dates) if recorded_dates else None
+
+    # All workdays in the month up to the cutoff
     workdays = _get_workdays_in_month(month)
     unrecorded_absent_days = 0
     unrecorded_debt_minutes = 0
@@ -218,11 +223,13 @@ def get_monthly_summary(employee_id, month):
     for wd in workdays:
         wd_str = wd.strftime('%Y-%m-%d')
         if wd_str not in recorded_dates:
-            # This workday has no record → employee was absent the entire day
-            req_h = get_required_hours(wd)
-            unrecorded_absent_days += 1
-            unrecorded_debt_minutes -= int(req_h * 60)  # negative = owes time
-            unrecorded_req_hours += req_h
+            # Only count as absent if this day is ON or AFTER the employee's
+            # first record (i.e. they were already in the system)
+            if first_record_date and wd_str >= first_record_date:
+                req_h = get_required_hours(wd)
+                unrecorded_absent_days += 1
+                unrecorded_debt_minutes -= int(req_h * 60)  # negative = owes time
+                unrecorded_req_hours += req_h
 
     # Sum from existing records
     total_req    = sum(r['required_hours'] for r in rows) + unrecorded_req_hours
@@ -251,4 +258,6 @@ def get_monthly_summary(employee_id, month):
         'surplus_hours':        surplus_h,
         'short_hours':          short_h,
         'daily_records':        rows,
+        'workday_count':        len(workdays),
+        'cutoff_date':          workdays[-1].strftime('%d %b') if workdays else '',
     }

@@ -214,12 +214,31 @@ def generate_monthly_pulse(month=None):
         style.add('FONTNAME',  (6,i), (6,i), 'Helvetica-Bold')
     tbl.setStyle(style)
 
+    # Grab period info from first summary
+    req_per_day = pl.get_required_hours()
+    first_summary = None
+    for e in emps:
+        first_summary = pl.get_monthly_summary(e['id'], month)
+        if first_summary:
+            break
+    workday_count = first_summary['workday_count'] if first_summary else 0
+    cutoff_date   = first_summary['cutoff_date'] if first_summary else ''
+    total_req_h   = round(workday_count * req_per_day, 1)
+
     dt = datetime.strptime(month, '%Y-%m')
+    month_start = '01 ' + dt.strftime('%b')
+    period_str = f"Period: {month_start} – {cutoff_date} {dt.strftime('%Y')}  |  Workdays: {workday_count}  |  Required: {req_per_day:.1f}h/day  ({int(total_req_h)}h {int((total_req_h % 1)*60):02d}m total)"
+
+    styles = getSampleStyleSheet()
+    info_style = ParagraphStyle('info', fontSize=9, textColor=C_DARK, fontName='Helvetica-Bold')
+
     elements = [
         _header_table('Monthly Pulse Report', dt.strftime('%B %Y')),
         Spacer(1, 0.3*cm),
         HRFlowable(width='100%', color=C_PURPLE, thickness=1.5),
-        Spacer(1, 0.4*cm),
+        Spacer(1, 0.2*cm),
+        Paragraph(period_str, info_style),
+        Spacer(1, 0.3*cm),
         tbl,
     ]
     doc.build(elements)
