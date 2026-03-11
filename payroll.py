@@ -162,6 +162,23 @@ def get_live_status(employee_id, today_str=None):
 
 # ── monthly summary ────────────────────────────────────────────────────────────
 
+def _get_workdays_in_month(month_str):
+    """Return list of workday date objects in the given 'YYYY-MM' month, up to today."""
+    import calendar
+    year, mon = int(month_str[:4]), int(month_str[5:7])
+    _, last_day = calendar.monthrange(year, mon)
+    today = date.today()
+    workdays = []
+    for day in range(1, last_day + 1):
+        d = date(year, mon, day)
+        if d > today:
+            break
+        day_type, _ = get_day_type(d)
+        if day_type == 'workday':
+            workdays.append(d)
+    return workdays
+
+
 def get_monthly_summary(employee_id, month):
     """month: 'YYYY-MM'. Returns attendance summary."""
     conn = db.get_db()
@@ -175,9 +192,32 @@ def get_monthly_summary(employee_id, month):
     if not emp:
         return None
 
-    total_req    = sum(r['required_hours'] for r in rows)
+    # Build a set of dates that have attendance records
+    recorded_dates = {r['date'] for r in rows}
+
+    # Find all workdays in the month (up to today) and identify unrecorded ones
+    workdays = _get_workdays_in_month(month)
+    unrecorded_absent_days = 0
+    unrecorded_debt_minutes = 0
+    unrecorded_req_hours = 0.0
+
+    for wd in workdays:
+        wd_str = wd.strftime('%Y-%m-%d')
+        if wd_str not in recorded_dates:
+            # This workday has no record → employee was absent the entire day
+            req_h = get_required_hours(wd)
+            unrecorded_absent_days += 1
+            unrecorded_debt_minutes -= int(req_h * 60)  # negative = owes time
+            unrecorded_req_hours += req_h
+
+    # Sum from existing records
+    total_req    = sum(r['required_hours'] for r in rows) + unrecorded_req_hours
     total_worked = sum(r['total_hours'] for r in rows)
-    net_debt_m   = sum(r['debt_minutes'] for r in rows)
+    net_debt_m   = sum(r['debt_minutes'] for r in rows) + unrecorded_debt_minutes
+
+    # Count absent from existing records + unrecorded workdays
+    days_absent_recorded = sum(1 for r in rows if r['status'] == 'absent')
+    total_absent = days_absent_recorded + unrecorded_absent_days
 
     surplus_h = round(max(0,  net_debt_m) / 60, 2)
     short_h   = round(max(0, -net_debt_m) / 60, 2)
@@ -189,7 +229,7 @@ def get_monthly_summary(employee_id, month):
         'employee':             emp,
         'month':                month,
         'days_present':         sum(1 for r in rows if r['status'] == 'present'),
-        'days_absent':          sum(1 for r in rows if r['status'] == 'absent'),
+        'days_absent':          total_absent,
         'days_off':             sum(1 for r in rows if r['status'] in ('weekly_off', 'holiday')),
         'total_required_hours': total_required,
         'total_worked_hours':   total_actual,
