@@ -98,10 +98,11 @@ def generate_daily_pulse():
         ci = _format_time_12h(ci_raw) if ci_raw else '-'
         co = _format_time_12h(co_raw) if co_raw else '-'
         h_worked: float = float(s.get('hours_worked') or 0.0)
-        hw = f"{h_worked:.1f} h" if ci_raw else '-'
+        hw = f"{int(h_worked)}h {int((h_worked % 1) * 60):02d}m" if ci_raw else '-'
         dm  = int(s.get('debt_minutes') or 0)
         ds_raw   = (f"+{dm//60}h {dm%60:02d}m" if dm >= 0 else f"-{(-dm)//60}h {(-dm)%60:02d}m")
-        debt_str = ds_raw if s.get('clock_in') else '-'
+        # Show debt if they clocked in OR if they are marked absent (which means they owe the full day)
+        debt_str = ds_raw if (s.get('clock_in') or str(s.get('status')) == 'absent') else '-'
         color    = _status_color(str(s.get('status', 'absent')), dm)
 
         stat = str(s.get('status', 'absent'))
@@ -260,9 +261,9 @@ def generate_employee_deep_dive(employee_id, month):
     kpis  = [
         ('Days Present', str(summary['days_present']),         C_GREEN),
         ('Days Absent',  str(summary['days_absent']),          C_RED),
-        ('Hours Worked', f"{summary['total_worked_hours']:.1f}h", C_CYAN),
-        ('Surplus Hrs',  f"{summary['surplus_hours']:.1f}h",   C_GREEN),
-        ('Short Hrs',    f"{summary['short_hours']:.1f}h",     C_AMBER),
+        ('Hours Worked', f"{int(summary['total_worked_hours'])}h {int((summary['total_worked_hours'] % 1) * 60):02d}m", C_CYAN),
+        ('Surplus Hrs',  f"{int(summary['surplus_hours'])}h {int((summary['surplus_hours'] % 1) * 60):02d}m",   C_GREEN),
+        ('Short Hrs',    f"{int(summary['short_hours'])}h {int((summary['short_hours'] % 1) * 60):02d}m",     C_AMBER),
     ]
 
     kpi_table_data = [[Paragraph(f"<b>{v}</b><br/><font size=7 color='grey'>{k}</font>", 
@@ -289,7 +290,7 @@ def generate_employee_deep_dive(employee_id, month):
         co   = _format_time_12h(r['clock_out'])
         rows.append([d.strftime('%d %b'), d.strftime('%a'),
                      f"{r['required_hours']:.1f}",
-                     ci, co, f"{r['total_hours']:.1f}h", ds,
+                     ci, co, f"{int(r['total_hours'])}h {int((r['total_hours'] % 1) * 60):02d}m", ds,
                      r['status'].replace('_',' ').title()])
 
     tbl_data = [header] + rows
