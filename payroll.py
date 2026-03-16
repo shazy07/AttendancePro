@@ -194,15 +194,28 @@ def _get_workdays_in_month(month_str):
 
 
 def get_full_month_required_hours(month_str):
-    import calendar
+    """
+    User requested that the hourly rate always be calculated on a strict 
+    30-day basis, regardless of the actual month length or Weekly Offs.
+    """
+    # Sample the required hours of the 1st day of the month
     year, mon = int(month_str[:4]), int(month_str[5:7])
-    _, last_day = calendar.monthrange(year, mon)
-    total_hours = 0.0
-    for day in range(1, last_day + 1):
+    sample_date = date(year, mon, 1)
+    
+    # We get the base required hours for a typical workday 
+    # (ignoring if the 1st happens to be a weekly off)
+    base_hours = 0.0
+    
+    # Simulate a full week to find the standard non-Ramadan/Ramadan workday hours
+    for day in range(1, 8):
         d = date(year, mon, day)
-        day_type, _ = get_day_type(d)
-        if day_type == 'workday':
-            total_hours += get_required_hours(d)
+        day_type, _ = pl_get_day_type(d) if 'pl_get_day_type' in locals() else get_day_type(d)
+        if day_type == 'workday' or day_type == 'holiday':
+            base_hours = get_required_hours(d)
+            break
+            
+    # Always multiply by exactly 30 days
+    total_hours = base_hours * 30.0
     return total_hours
 
 
