@@ -141,17 +141,22 @@ def add_employee():
 @login_required
 def update_employee(eid):
     d = request.json or {}
-    conn = db.get_db()
-    conn.execute(
-        '''UPDATE employees SET name=?,designation=?,department=?,
-           email=?,phone=?,monthly_salary=? WHERE id=?''',
-        (d.get('name',''), d.get('designation',''), d.get('department',''),
-         d.get('email',''), d.get('phone',''), float(d.get('monthly_salary') or 0.0), eid)
-    )
-    conn.commit()
-    row = db.row_to_dict(conn.execute('SELECT * FROM employees WHERE id=?', (eid,)).fetchone())
-    conn.close()
-    return ok(row)
+    try:
+        conn = db.get_db()
+        conn.execute(
+            '''UPDATE employees SET name=?,designation=?,department=?,
+               email=?,phone=?,monthly_salary=? WHERE id=?''',
+            (d.get('name',''), d.get('designation',''), d.get('department',''),
+             d.get('email',''), d.get('phone',''), float(d.get('monthly_salary') or 0.0), eid)
+        )
+        conn.commit()
+        row = db.row_to_dict(conn.execute('SELECT * FROM employees WHERE id=?', (eid,)).fetchone())
+        conn.close()
+        return ok(row)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return err(str(e), 500)
 
 
 @app.route('/api/employees/<int:eid>', methods=['DELETE'])

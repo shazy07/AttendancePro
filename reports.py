@@ -263,6 +263,7 @@ def generate_employee_deep_dive(employee_id, month):
     kpis  = [
         ('Days Present', str(summary['days_present']),         C_GREEN),
         ('Days Absent',  str(summary['days_absent']),          C_RED),
+        ('Req Hours',    f"{int(summary['total_required_hours'])}h {int((summary['total_required_hours'] % 1) * 60):02d}m", C_DARK),
         ('Hours Worked', f"{int(summary['total_worked_hours'])}h {int((summary['total_worked_hours'] % 1) * 60):02d}m", C_CYAN),
         ('Surplus Hrs',  f"{int(summary['surplus_hours'])}h {int((summary['surplus_hours'] % 1) * 60):02d}m",   C_GREEN),
         ('Short Hrs',    f"{int(summary['short_hours'])}h {int((summary['short_hours'] % 1) * 60):02d}m",     C_AMBER),
@@ -271,7 +272,7 @@ def generate_employee_deep_dive(employee_id, month):
     kpi_table_data = [[Paragraph(f"<b>{v}</b><br/><font size=7 color='grey'>{k}</font>", 
                                   ParagraphStyle('kp', fontSize=11, alignment=TA_CENTER,
                                                  textColor=c)) for k,v,c in kpis]]
-    kpi_tbl = Table(kpi_table_data, colWidths=[2.8*cm]*5)
+    kpi_tbl = Table(kpi_table_data, colWidths=[2.33*cm]*6)
     kpi_tbl.setStyle(TableStyle([
         ('BACKGROUND',    (0,0), (-1,-1), C_ROW_ALT),
         ('BOX',           (0,0), (-1,-1), 0.5, C_GREY),
