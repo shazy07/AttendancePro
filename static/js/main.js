@@ -73,9 +73,10 @@ document.getElementById('lottieOverlay').addEventListener('click', () => Celebra
 const PAGES = {
   'dashboard': { title: 'Dashboard', init: () => Dashboard.init() },
   'employees': { title: 'Employees', init: () => Employees.load() },
-  'holidays': { title: 'Holidays', init: () => Holidays.load() },
-  'reports': { title: 'Report Hub', init: () => Reports.init() },
-  'settings': { title: 'Settings', init: () => Settings.load() },
+  'advances':  { title: 'Advance Salaries', init: () => Advances.init() },
+  'holidays':  { title: 'Holidays', init: () => Holidays.load() },
+  'reports':   { title: 'Report Hub', init: () => Reports.init() },
+  'settings':  { title: 'Settings', init: () => Settings.load() },
 };
 
 function navigate(hash) {

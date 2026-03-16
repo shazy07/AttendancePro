@@ -125,10 +125,10 @@ def add_employee():
         return err('name is required')
     conn = db.get_db()
     cur  = conn.execute(
-        '''INSERT INTO employees (name,designation,department,email,phone)
-           VALUES (?,?,?,?,?)''',
+        '''INSERT INTO employees (name,designation,department,email,phone,monthly_salary)
+           VALUES (?,?,?,?,?,?)''',
         (d['name'], d.get('designation',''), d.get('department',''),
-         d.get('email',''), d.get('phone',''))
+         d.get('email',''), d.get('phone',''), float(d.get('monthly_salary') or 0.0))
     )
     conn.commit()
     new_id = cur.lastrowid
@@ -144,9 +144,9 @@ def update_employee(eid):
     conn = db.get_db()
     conn.execute(
         '''UPDATE employees SET name=?,designation=?,department=?,
-           email=?,phone=? WHERE id=?''',
+           email=?,phone=?,monthly_salary=? WHERE id=?''',
         (d.get('name',''), d.get('designation',''), d.get('department',''),
-         d.get('email',''), d.get('phone',''), eid)
+         d.get('email',''), d.get('phone',''), float(d.get('monthly_salary') or 0.0), eid)
     )
     conn.commit()
     row = db.row_to_dict(conn.execute('SELECT * FROM employees WHERE id=?', (eid,)).fetchone())
@@ -361,16 +361,92 @@ def bulk_entry():
 @app.route('/api/attendance/status', methods=['GET'])
 @login_required
 def attendance_status():
-    """Live status for all active employees today."""
+    """Live status for all active employees today (Optimized for fast loading)."""
     ts   = request.args.get('date', today_str())
+    
+    # 1. Pre-fetch common data once
+    dtype, holiday = pl.get_day_type(ts)
+    req_hours      = pl.get_required_hours(ts)
+    shift_end      = pl.get_shift_end_str(ts)
+    
+    # Calculate start of month for debt calculation
+    try:
+        ts_date_obj = datetime.strptime(ts, '%Y-%m-%d')
+    except Exception:
+        ts_date_obj = datetime.today()
+    month_start_str = ts_date_obj.replace(day=1).strftime('%Y-%m-%d')
+    
     conn = db.get_db()
+    # 2. Get all active employees
     emps = db.rows_to_list(conn.execute('SELECT * FROM employees WHERE is_active=1 ORDER BY name').fetchall())
+    
+    # 3. Get all attendance records for today
+    att_rows = db.rows_to_list(conn.execute('SELECT * FROM attendance WHERE date=?', (ts,)).fetchall())
+    att_map  = {r['employee_id']: r for r in att_rows}
+    
+    # 4. Get all accumulated debt for active employees up to today (this month)
+    debt_rows = db.rows_to_list(conn.execute(
+        '''SELECT employee_id, SUM(debt_minutes) as tot_debt FROM attendance
+           WHERE date>=? AND date<? AND status NOT IN ("weekly_off","holiday")
+           GROUP BY employee_id''',
+        (month_start_str, ts)
+    ).fetchall())
+    debt_map = {r['employee_id']: r['tot_debt'] for r in debt_rows}
+    
     conn.close()
+
     result = []
+    now_dt = datetime.now()
+    
     for e in emps:
-        s = pl.get_live_status(e['id'], ts)
-        s['employee'] = e
+        eid = e['id']
+        row = att_map.get(eid)
+        
+        s = {
+            'employee':       e,
+            'day_type':       dtype,
+            'required_hours': req_hours,
+            'holiday_name':   holiday['name'] if holiday else None,
+            'clock_in':       None,
+            'clock_out':      None,
+            'hours_worked':   0.0,
+            'debt_minutes':   0,
+            'status':         dtype if dtype != 'workday' else 'absent',
+            'target_leave':   shift_end,
+            'color':          'blue' if dtype in ('weekly_off', 'holiday') else 'red',
+        }
+        
+        if row:
+            s['clock_in']     = row['clock_in']
+            s['clock_out']    = row['clock_out']
+            s['hours_worked'] = row['total_hours']
+            s['debt_minutes'] = row['debt_minutes']
+            s['status']       = row['status']
+            
+            if row.get('clock_in') and not row.get('clock_out'):
+                ci_str = str(row['clock_in'])
+                ci_dt  = datetime.fromisoformat(ci_str.split('.')[0].replace(' ', 'T'))
+                elapsed = (now_dt - ci_dt).total_seconds() / 3600.0
+                s['hours_worked'] = float(f"{float(elapsed):.2f}")
+                debt_so_far = int((float(elapsed) - float(req_hours)) * 60)
+                s['debt_minutes'] = debt_so_far
+                
+                prior = debt_map.get(eid, 0)
+                s['target_leave'] = pl.get_target_leave_time(ci_str, req_hours, prior)
+            
+            debt_val = s.get('debt_minutes')
+            debt = int(debt_val) if debt_val is not None else 0
+            if s['status'] in ('weekly_off', 'holiday'):
+                s['color'] = 'blue'
+            elif debt >= 0 and s['status'] == 'present':
+                s['color'] = 'green'
+            elif debt < -30:
+                s['color'] = 'red'
+            else:
+                s['color'] = 'amber'
+                
         result.append(s)
+
     return ok(result)
 
 
@@ -511,6 +587,66 @@ def update_settings():
 
 
 # ── Payroll ─────────────────────────────────────────────────────────────────────
+@app.route('/api/advances', methods=['GET'])
+@login_required
+def get_advances():
+    month = request.args.get('month') # YYYY-MM
+    conn = db.get_db()
+    
+    query = '''
+        SELECT a.id, a.employee_id, a.date, a.amount, a.notes, e.name as employee_name
+        FROM advance_salaries a
+        JOIN employees e ON a.employee_id = e.id
+        WHERE 1=1
+    '''
+    params = []
+    if month:
+        query += " AND strftime('%Y-%m', a.date) = ?"
+        params.append(month)
+    
+    query += " ORDER BY a.date DESC"
+    
+    rows = db.rows_to_list(conn.execute(query, params).fetchall())
+    conn.close()
+    return ok(rows)
+
+
+@app.route('/api/advances', methods=['POST'])
+@login_required
+def add_advance():
+    d = request.json or {}
+    required = ['employee_id', 'date', 'amount']
+    if not all(d.get(f) for f in required):
+        return err('employee_id, date, and amount are required')
+        
+    conn = db.get_db()
+    cur = conn.execute(
+        '''INSERT INTO advance_salaries (employee_id, date, amount, notes)
+           VALUES (?, ?, ?, ?)''',
+        (d['employee_id'], d['date'], float(d['amount']), d.get('notes', ''))
+    )
+    conn.commit()
+    new_id = cur.lastrowid
+    
+    row = db.row_to_dict(conn.execute(
+        '''SELECT a.*, e.name as employee_name 
+           FROM advance_salaries a 
+           JOIN employees e ON a.employee_id = e.id 
+           WHERE a.id=?''', 
+        (new_id,)
+    ).fetchone())
+    conn.close()
+    return ok(row), 201
+
+
+@app.route('/api/advances/<int:aid>', methods=['DELETE'])
+@login_required
+def delete_advance(aid):
+    conn = db.get_db()
+    conn.execute('DELETE FROM advance_salaries WHERE id=?', (aid,))
+    conn.commit()
+    conn.close()
+    return ok({'deleted': aid})
 @app.route('/api/payroll/monthly/<int:eid>/<month>')
 @login_required
 def monthly_payroll(eid, month):

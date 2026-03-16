@@ -193,6 +193,19 @@ def _get_workdays_in_month(month_str):
     return workdays
 
 
+def get_full_month_required_hours(month_str):
+    import calendar
+    year, mon = int(month_str[:4]), int(month_str[5:7])
+    _, last_day = calendar.monthrange(year, mon)
+    total_hours = 0.0
+    for day in range(1, last_day + 1):
+        d = date(year, mon, day)
+        day_type, _ = get_day_type(d)
+        if day_type == 'workday':
+            total_hours += get_required_hours(d)
+    return total_hours
+
+
 def get_monthly_summary(employee_id, month):
     """month: 'YYYY-MM'. Returns attendance summary."""
     conn = db.get_db()
@@ -248,8 +261,15 @@ def get_monthly_summary(employee_id, month):
     # Calculate totals directly from the unified rows list
     total_req    = sum(r['required_hours'] for r in rows)
     total_worked = sum(r['total_hours'] for r in rows)
-    net_debt_m   = sum(r['debt_minutes'] for r in rows)
     
+    net_debt_m   = 0
+    for r in rows:
+        m = r['debt_minutes']
+        if r.get('is_holiday_work'):
+            mult = float(r.get('overtime_multiplier') or 1.0)
+            m = int(m * mult)
+        net_debt_m += m
+        
     days_absent_recorded = sum(1 for r in rows if r['status'] == 'absent')
 
     surplus_h = round(max(0,  net_debt_m) / 60, 2)
@@ -257,6 +277,23 @@ def get_monthly_summary(employee_id, month):
 
     total_required = float(f"{float(total_req):.2f}")
     total_actual   = float(f"{float(total_worked):.2f}")
+
+    full_month_req_hours = get_full_month_required_hours(month)
+    monthly_salary = float(emp.get('monthly_salary') or 0.0)
+    hourly_rate = monthly_salary / full_month_req_hours if full_month_req_hours > 0 else 0.0
+    
+    # Fetch advances
+    conn = db.get_db()
+    advances_rows = conn.execute(
+        "SELECT amount FROM advance_salaries WHERE employee_id=? AND strftime('%Y-%m',date)=?",
+        (employee_id, month)
+    ).fetchall()
+    conn.close()
+    
+    total_advances = sum(r['amount'] for r in advances_rows)
+    overtime_earnings = surplus_h * hourly_rate
+    short_deductions  = short_h * hourly_rate
+    net_salary = monthly_salary + overtime_earnings - short_deductions - total_advances
 
     return {
         'employee':             emp,
@@ -269,6 +306,12 @@ def get_monthly_summary(employee_id, month):
         'net_debt_minutes':     net_debt_m,
         'surplus_hours':        surplus_h,
         'short_hours':          short_h,
+        'monthly_salary':       round(monthly_salary, 2),
+        'hourly_rate':          round(hourly_rate, 2),
+        'overtime_earnings':    round(overtime_earnings, 2),
+        'short_deductions':     round(short_deductions, 2),
+        'total_advances':       round(total_advances, 2),
+        'net_salary':           round(net_salary, 2),
         'daily_records':        rows,
         'workday_count':        len(workdays),
         'cutoff_date':          workdays[-1].strftime('%d %b') if workdays else '',

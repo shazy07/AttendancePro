@@ -33,8 +33,14 @@ def init_db():
         email       TEXT    DEFAULT '',
         phone       TEXT    DEFAULT '',
         created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-        is_active   INTEGER DEFAULT 1
+        is_active   INTEGER DEFAULT 1,
+        monthly_salary REAL DEFAULT 0.0
     )''')
+
+    try:
+        c.execute('ALTER TABLE employees ADD COLUMN monthly_salary REAL DEFAULT 0.0')
+    except sqlite3.OperationalError:
+        pass
 
 
     c.execute('''CREATE TABLE IF NOT EXISTS attendance (
@@ -64,6 +70,15 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS settings (
         key   TEXT PRIMARY KEY,
         value TEXT
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS advance_salaries (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id INTEGER NOT NULL,
+        date        DATE    NOT NULL,
+        amount      REAL    NOT NULL,
+        notes       TEXT    DEFAULT '',
+        FOREIGN KEY (employee_id) REFERENCES employees(id)
     )''')
 
     c.execute('''CREATE TABLE IF NOT EXISTS payroll_summary (

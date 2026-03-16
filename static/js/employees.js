@@ -33,6 +33,7 @@ const Employees = (() => {
         <td>${e.designation || '—'}</td>
         <td><span style="background:rgba(124,58,237,.12);color:var(--purple);border-radius:20px;padding:2px 10px;font-size:12px">${e.department || '—'}</span></td>
         <td style="color:var(--text-secondary);font-size:12px">${e.email || '—'}<br>${e.phone || ''}</td>
+        <td><strong>${e.monthly_salary ? parseFloat(e.monthly_salary).toLocaleString() : '0'} PKR</strong></td>
         <td>
           <div style="display:flex;gap:6px">
             <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" onclick="Employees.openEdit(${e.id})">
@@ -53,6 +54,7 @@ const Employees = (() => {
     document.getElementById('empDept').value = '';
     document.getElementById('empEmail').value = '';
     document.getElementById('empPhone').value = '';
+    document.getElementById('empSalary').value = '';
     document.getElementById('empModalTitle').textContent = 'Add Employee';
     document.getElementById('empModal').style.display = 'flex';
     setTimeout(() => document.getElementById('empName').focus(), 100);
@@ -67,6 +69,7 @@ const Employees = (() => {
     document.getElementById('empDept').value = e.department || '';
     document.getElementById('empEmail').value = e.email || '';
     document.getElementById('empPhone').value = e.phone || '';
+    document.getElementById('empSalary').value = e.monthly_salary || '';
     document.getElementById('empModalTitle').textContent = `Edit — ${e.name}`;
     document.getElementById('empModal').style.display = 'flex';
   }
@@ -83,6 +86,7 @@ const Employees = (() => {
       department: document.getElementById('empDept').value.trim(),
       email: document.getElementById('empEmail').value.trim(),
       phone: document.getElementById('empPhone').value.trim(),
+      monthly_salary: parseFloat(document.getElementById('empSalary').value) || 0,
     };
 
     if (!body.name) { Toast.error('Name is required'); return; }

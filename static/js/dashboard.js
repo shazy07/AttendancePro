@@ -150,14 +150,16 @@ const Dashboard = (() => {
     document.getElementById('todayLabel').textContent =
       new Date().toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    await refresh();
+    await refresh(true);
     clearInterval(_refreshTimer);
-    _refreshTimer = setInterval(refresh, 30000); // auto-refresh every 30s
+    _refreshTimer = setInterval(() => refresh(false), 30000); // auto-refresh every 30s
   }
 
-  async function refresh() {
-    document.getElementById('employeeGrid').innerHTML =
-      '<div class="loading-ring"><div></div><div></div><div></div><div></div></div>';
+  async function refresh(showLoader = true) {
+    if (showLoader) {
+      document.getElementById('employeeGrid').innerHTML =
+        '<div class="loading-ring"><div></div><div></div><div></div><div></div></div>';
+    }
     const res = await API.get('/api/attendance/status');
     if (res.ok) _render(res.data);
     else Toast.error('Could not load status');
@@ -177,7 +179,7 @@ const Dashboard = (() => {
     const res = await API.post('/api/attendance/clockin', { employee_id: empId });
     if (res.ok) {
       Celebrate.show(`${name} is clocked in! 🕘`);
-      await refresh();
+      await refresh(false);
     } else {
       Toast.error(res.error || 'Clock-in failed');
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ri-login-box-line"></i> Clock In'; }
@@ -196,7 +198,7 @@ const Dashboard = (() => {
         ? `${name} clocked out — ${h}h worked! Surplus ${minutesToHrMin(dm)} 🎉`
         : `${name} clocked out — ${h}h worked. Debt ${minutesToHrMin(dm)}`;
       Celebrate.show(msg);
-      await refresh();
+      await refresh(false);
     } else {
       Toast.error(res.error || 'Clock-out failed');
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ri-logout-box-line"></i> Clock Out'; }
@@ -291,7 +293,7 @@ const Dashboard = (() => {
       if (d.errors && d.errors.length) msg += `\n⚠ ${d.errors.join(', ')}`;
       Celebrate.show(msg);
       closeBulkModal();
-      await refresh();
+      await refresh(false);
     } else {
       Toast.error(res.error || 'Bulk save failed');
     }

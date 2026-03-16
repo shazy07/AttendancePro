@@ -180,6 +180,7 @@ def generate_monthly_pulse(month=None):
         
         # Color based on net debt
         color = C_GREEN if dm >= 0 else (C_RED if dm < -600 else C_AMBER)
+        net_salary_str = f"{int(s.get('net_salary', 0)):,} PKR"
         
         rows_data.append([
             e['name'],
@@ -188,14 +189,15 @@ def generate_monthly_pulse(month=None):
             str(s['days_absent']),
             f"{int(s['total_worked_hours'])}h {int((s['total_worked_hours'] % 1) * 60):02d}m",
             ds,
+            net_salary_str,
             "Good" if dm >= 0 else "Under",
             color
         ])
 
     # Table
-    header = ['Employee', 'Designation', 'Present', 'Absent', 'Total Hours', 'Debt/Surplus', 'Status']
-    table_data = [header] + [r[:7] for r in rows_data]
-    col_w = [5*cm, 5*cm, 2.5*cm, 2.5*cm, 3*cm, 4*cm, 3.5*cm]
+    header = ['Employee', 'Designation', 'Present', 'Absent', 'Total Hours', 'Debt/Surplus', 'Net Salary', 'Status']
+    table_data = [header] + [r[:8] for r in rows_data]
+    col_w = [4.5*cm, 4.5*cm, 2*cm, 2*cm, 3*cm, 3.5*cm, 3.5*cm, 3*cm]
 
     tbl = Table(table_data, colWidths=col_w, repeatRows=1)
     style = TableStyle([
@@ -211,8 +213,8 @@ def generate_monthly_pulse(month=None):
         ('BOTTOMPADDING',(0,0), (-1,-1), 6),
     ])
     for i, r in enumerate(rows_data, 1):
-        style.add('TEXTCOLOR', (6,i), (6,i), r[7])
-        style.add('FONTNAME',  (6,i), (6,i), 'Helvetica-Bold')
+        style.add('TEXTCOLOR', (7,i), (7,i), r[8])
+        style.add('FONTNAME',  (7,i), (7,i), 'Helvetica-Bold')
     tbl.setStyle(style)
 
     # Grab period info from first summary
@@ -279,6 +281,29 @@ def generate_employee_deep_dive(employee_id, month):
         ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
     ]))
 
+    # Financial Summary
+    fin_kpis = [
+        ('Base Salary', f"{int(summary.get('monthly_salary', 0)):,} PKR", C_PURPLE),
+        ('Hourly Rate', f"{summary.get('hourly_rate', 0):.2f} PKR/h", C_DARK),
+        ('Advances Total', f"-{int(summary.get('total_advances', 0)):,} PKR", C_RED),
+        ('Overtime', f"+{int(summary.get('overtime_earnings', 0)):,} PKR", C_GREEN),
+        ('Deductions', f"-{int(summary.get('short_deductions', 0)):,} PKR", C_AMBER),
+        ('Net Salary', f"{int(summary.get('net_salary', 0)):,} PKR", C_BLUE),
+    ]
+
+    fin_table_data = [[Paragraph(f"<b>{v}</b><br/><font size=7 color='grey'>{k}</font>", 
+                                  ParagraphStyle('fp', fontSize=10, alignment=TA_CENTER,
+                                                 textColor=c)) for k,v,c in fin_kpis]]
+    fin_tbl = Table(fin_table_data, colWidths=[2.8*cm]*6)
+    fin_tbl.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0), (-1,-1), C_ROW_ALT),
+        ('BOX',           (0,0), (-1,-1), 0.5, C_GREY),
+        ('INNERGRID',     (0,0), (-1,-1), 0.5, colors.white),
+        ('TOPPADDING',    (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+    ]))
+
     # Daily detail table
     header = ['Date', 'Day', 'Req Hrs', 'Clock In', 'Clock Out', 'Worked', 'Debt/Surplus', 'Status']
     rows   = []
@@ -316,6 +341,8 @@ def generate_employee_deep_dive(employee_id, month):
         HRFlowable(width='100%', color=C_PURPLE, thickness=1.5),
         Spacer(1, 0.3*cm),
         kpi_tbl,
+        Spacer(1, 0.4*cm),
+        fin_tbl,
         Spacer(1, 0.4*cm),
         tbl,
     ]
