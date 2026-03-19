@@ -283,19 +283,20 @@ def generate_employee_deep_dive(employee_id, month):
     ]))
 
     # Financial Summary
+    hr = summary.get('hourly_rate', 0)
     fin_kpis = [
-        ('Base Salary', f"{int(summary.get('monthly_salary', 0)):,} PKR", C_PURPLE),
-        ('Hourly Rate', f"{summary.get('hourly_rate', 0):.2f} PKR/h", C_DARK),
-        ('Advances Total', f"-{int(summary.get('total_advances', 0)):,} PKR", C_RED),
-        ('Overtime', f"+{int(summary.get('overtime_earnings', 0)):,} PKR", C_GREEN),
-        ('Deductions', f"-{int(summary.get('short_deductions', 0)):,} PKR", C_AMBER),
-        ('Net Salary', f"{int(summary.get('net_salary', 0)):,} PKR", C_BLUE),
+        ('Base Salary', f"{int(summary.get('monthly_salary', 0)):,}<br/><font size=6>({hr:.1f}/h)</font>", C_PURPLE),
+        ('Overtime', f"+{int(summary.get('overtime_earnings', 0)):,}", C_GREEN),
+        ('Short Time', f"-{int(summary.get('short_deductions', 0)):,}", C_AMBER),
+        ('Deducted', f"-{int(summary.get('advance_deductions', 0)):,}", C_RED),
+        ('Net Payout', f"{int(summary.get('net_salary', 0)):,} PKR", C_BLUE),
+        ('Total Debt', f"{int(summary.get('total_outstanding_debt', 0)):,}", C_DARK),
     ]
 
     fin_table_data = [[Paragraph(f"<b>{v}</b><br/><font size=7 color='grey'>{k}</font>", 
                                   ParagraphStyle('fp', fontSize=10, alignment=TA_CENTER,
                                                  textColor=c)) for k,v,c in fin_kpis]]
-    fin_tbl = Table(fin_table_data, colWidths=[2.8*cm]*6)
+    fin_tbl = Table(fin_table_data, colWidths=[2.33*cm]*6)
     fin_tbl.setStyle(TableStyle([
         ('BACKGROUND',    (0,0), (-1,-1), C_ROW_ALT),
         ('BOX',           (0,0), (-1,-1), 0.5, C_GREY),

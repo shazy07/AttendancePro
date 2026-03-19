@@ -295,18 +295,34 @@ def get_monthly_summary(employee_id, month):
     monthly_salary = float(emp.get('monthly_salary') or 0.0)
     hourly_rate = monthly_salary / full_month_req_hours if full_month_req_hours > 0 else 0.0
     
-    # Fetch advances
+    # Fetch advances activity for THIS month
     conn = db.get_db()
     advances_rows = conn.execute(
-        "SELECT amount FROM advance_salaries WHERE employee_id=? AND strftime('%Y-%m',date)=? AND type IN ('given', 'deduction')",
+        "SELECT amount, type FROM advance_salaries WHERE employee_id=? AND strftime('%Y-%m',date)=?",
         (employee_id, month)
     ).fetchall()
+    
+    # Calculate Total Outstanding Debt (Global)
+    ledger_query = '''
+        SELECT 
+            COALESCE(SUM(CASE WHEN type = 'given' THEN amount ELSE 0 END), 0) as total_given,
+            COALESCE(SUM(CASE WHEN type != 'given' THEN amount ELSE 0 END), 0) as total_repaid
+        FROM advance_salaries
+        WHERE employee_id = ?
+    '''
+    ledger = conn.execute(ledger_query, (employee_id,)).fetchone()
     conn.close()
     
-    total_advances = sum(r['amount'] for r in advances_rows)
+    total_outstanding_debt = ledger['total_given'] - ledger['total_repaid']
+
+    # For net payout, we ONLY deduct 'deduction' transactions assigned to this month
+    deductions_this_month = sum(r['amount'] for r in advances_rows if r['type'] == 'deduction')
+    
     overtime_earnings = surplus_h * hourly_rate
     short_deductions  = short_h * hourly_rate
-    net_salary = monthly_salary + overtime_earnings - short_deductions - total_advances
+    
+    gross_salary = monthly_salary + overtime_earnings - short_deductions
+    net_salary = gross_salary - deductions_this_month
 
     return {
         'employee':             emp,
@@ -323,7 +339,9 @@ def get_monthly_summary(employee_id, month):
         'hourly_rate':          round(hourly_rate, 2),
         'overtime_earnings':    round(overtime_earnings, 2),
         'short_deductions':     round(short_deductions, 2),
-        'total_advances':       round(total_advances, 2),
+        'gross_salary':         round(gross_salary, 2),
+        'advance_deductions':   round(deductions_this_month, 2),
+        'total_outstanding_debt': round(total_outstanding_debt, 2),
         'net_salary':           round(net_salary, 2),
         'daily_records':        rows,
         'workday_count':        len(workdays),

@@ -46,17 +46,64 @@ const Reports = (() => {
         });
     }
 
+    let _wizardEid = null;
+    let _wizardMonth = null;
+    let _wizardGross = 0;
+    let _wizardDeducted = 0;
+
     async function deepDive() {
         const eid = document.getElementById('reportEmpSel').value;
         const month = document.getElementById('reportMonth').value;
         if (!eid) { Toast.error('Please select an employee'); return; }
         if (!month) { Toast.error('Please select a month'); return; }
 
-        await _runBtn('btnDeepDive', 'Generating…', async () => {
-            const res = await API.post('/api/reports/employee-deep-dive', { employee_id: parseInt(eid), month });
+        const res = await API.get(`/api/payroll/monthly/${eid}/${month}`);
+        if (!res.ok) { Toast.error('Failed to analyze payroll'); return; }
+
+        _wizardEid = eid;
+        _wizardMonth = month;
+        _wizardGross = res.data.gross_salary || 0;
+        _wizardDeducted = res.data.advance_deductions || 0;
+        
+        document.getElementById('swGross').innerText = _wizardGross.toLocaleString() + ' PKR';
+        document.getElementById('swDeducted').innerText = _wizardDeducted.toLocaleString() + ' PKR';
+        document.getElementById('swDebt').innerText = (res.data.total_outstanding_debt || 0).toLocaleString() + ' PKR';
+        document.getElementById('swNewDeduction').value = 0;
+        
+        updateWizardNet();
+        document.getElementById('salaryWizardModal').style.display = 'flex';
+    }
+
+    function updateWizardNet() {
+        const newDeduct = parseFloat(document.getElementById('swNewDeduction').value) || 0;
+        const net = _wizardGross - _wizardDeducted - newDeduct;
+        document.getElementById('swNet').innerText = net.toLocaleString() + ' PKR';
+    }
+
+    async function confirmSalaryWizard() {
+        const newDeduct = parseFloat(document.getElementById('swNewDeduction').value) || 0;
+        
+        if (newDeduct > 0) {
+            const body = {
+                employee_id: parseInt(_wizardEid),
+                type: 'deduction',
+                date: new Date().toISOString().slice(0, 10), // Use today's date for deduction record
+                amount: newDeduct,
+                notes: 'Salary Deduction strictly applied during ' + _wizardMonth + ' payroll generation.'
+            };
+            const res = await API.post('/api/advances', body);
+            if (!res.ok) { Toast.error('Failed to log deduction'); return; }
+            Toast.success(`Successfully deducted ${newDeduct} PKR`);
+        }
+        
+        document.getElementById('salaryWizardModal').style.display = 'none';
+        
+        // Now print the PDF
+        await _runBtn('btnDeepDive', 'Generating Slip…', async () => {
+            const res = await API.post('/api/reports/employee-deep-dive', { employee_id: parseInt(_wizardEid), month: _wizardMonth });
             if (res.ok) {
                 window.open(res.data.url, '_blank');
-                Toast.success('Employee Deep-Dive PDF ready!');
+                Toast.success('Salary Slip PDF ready!');
             } else {
                 Toast.error(res.error || 'Failed to generate report');
             }
@@ -102,7 +149,7 @@ const Reports = (() => {
         else Toast.error(res.error || 'Email failed — check settings');
     }
 
-    return { init, dailyPulse, deepDive, monthlyPulse, companyLedger, testEmail };
+    return { init, dailyPulse, deepDive, updateWizardNet, confirmSalaryWizard, monthlyPulse, companyLedger, testEmail };
 })();
 
 /* Spin animation for loading icon */
