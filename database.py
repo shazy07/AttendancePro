@@ -77,9 +77,15 @@ def init_db():
         employee_id INTEGER NOT NULL,
         date        DATE    NOT NULL,
         amount      REAL    NOT NULL,
+        type        TEXT    DEFAULT 'given',
         notes       TEXT    DEFAULT '',
         FOREIGN KEY (employee_id) REFERENCES employees(id)
     )''')
+
+    try:
+        c.execute("ALTER TABLE advance_salaries ADD COLUMN type TEXT DEFAULT 'given'")
+    except sqlite3.OperationalError:
+        pass
 
     c.execute('''CREATE TABLE IF NOT EXISTS payroll_summary (
         id                     INTEGER PRIMARY KEY AUTOINCREMENT,

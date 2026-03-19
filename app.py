@@ -599,7 +599,7 @@ def get_advances():
     conn = db.get_db()
     
     query = '''
-        SELECT a.id, a.employee_id, a.date, a.amount, a.notes, e.name as employee_name
+        SELECT a.id, a.employee_id, a.date, a.amount, a.type, a.notes, e.name as employee_name
         FROM advance_salaries a
         JOIN employees e ON a.employee_id = e.id
         WHERE 1=1
@@ -625,10 +625,11 @@ def add_advance():
         return err('employee_id, date, and amount are required')
         
     conn = db.get_db()
+    adv_type = d.get('type', 'given')
     cur = conn.execute(
-        '''INSERT INTO advance_salaries (employee_id, date, amount, notes)
-           VALUES (?, ?, ?, ?)''',
-        (d['employee_id'], d['date'], float(d['amount']), d.get('notes', ''))
+        '''INSERT INTO advance_salaries (employee_id, date, amount, type, notes)
+           VALUES (?, ?, ?, ?, ?)''',
+        (d['employee_id'], d['date'], float(d['amount']), adv_type, d.get('notes', ''))
     )
     conn.commit()
     new_id = cur.lastrowid
@@ -652,6 +653,33 @@ def delete_advance(aid):
     conn.commit()
     conn.close()
     return ok({'deleted': aid})
+
+
+@app.route('/api/advances/ledger', methods=['GET'])
+@login_required
+def get_advances_ledger():
+    conn = db.get_db()
+    query = '''
+        SELECT 
+            e.id as employee_id,
+            e.name as employee_name,
+            e.designation,
+            COALESCE(SUM(CASE WHEN a.type = 'given' THEN a.amount ELSE 0 END), 0) as total_given,
+            COALESCE(SUM(CASE WHEN a.type != 'given' THEN a.amount ELSE 0 END), 0) as total_repaid
+        FROM employees e
+        LEFT JOIN advance_salaries a ON e.id = a.employee_id
+        WHERE e.is_active = 1
+        GROUP BY e.id
+        ORDER BY e.name
+    '''
+    rows = db.rows_to_list(conn.execute(query).fetchall())
+    conn.close()
+    
+    # Calculate balance
+    for r in rows:
+        r['balance'] = r['total_given'] - r['total_repaid']
+        
+    return ok(rows)
 @app.route('/api/payroll/monthly/<int:eid>/<month>')
 @login_required
 def monthly_payroll(eid, month):

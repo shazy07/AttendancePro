@@ -234,33 +234,57 @@
     <section class="page" id="page-advances" style="display:none">
       <div class="page-header">
         <div>
-          <h1 class="page-h1">Advance Salaries</h1>
-          <p class="page-sub">Track and grant advances</p>
+          <h1 class="page-h1">Advance Ledger</h1>
+          <p class="page-sub">Track balances and transaction history</p>
         </div>
         <button class="btn btn-primary" onclick="Advances.openAdd()">
-          <i class="ri-hand-coin-line"></i> Grant Advance
+          <i class="ri-add-circle-line"></i> New Transaction
         </button>
       </div>
 
-      <div class="glass-card holiday-list-card">
-        <div class="section-header">
-          <h2 class="section-title">Advance History</h2>
-          <input type="month" id="advMonthFilter" class="form-input" style="width:160px" onchange="Advances.load()" />
+      <div class="holidays-layout">
+        <!-- Master Ledger -->
+        <div class="glass-card holiday-list-card">
+          <div class="section-header">
+            <h2 class="section-title">Master Ledger</h2>
+            <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="Advances.loadLedger()"><i class="ri-refresh-line"></i></button>
+          </div>
+          <table class="data-table" id="ledgerTable">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th style="color:var(--text-secondary)">Total Given</th>
+                <th style="color:var(--text-secondary)">Recovered</th>
+                <th style="color:var(--purple)">Balance</th>
+              </tr>
+            </thead>
+            <tbody id="ledgerTbody">
+              <tr><td colspan="4" class="tbl-empty">Loading…</td></tr>
+            </tbody>
+          </table>
         </div>
-        <table class="data-table" id="advancesTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Employee</th>
-              <th>Amount (PKR)</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="advancesTbody">
-            <tr><td colspan="5" class="tbl-empty">Loading…</td></tr>
-          </tbody>
-        </table>
+
+        <!-- History -->
+        <div class="glass-card holiday-list-card">
+          <div class="section-header">
+            <h2 class="section-title">Transaction History</h2>
+            <input type="month" id="advMonthFilter" class="form-input" style="width:160px" onchange="Advances.loadHistory()" />
+          </div>
+          <table class="data-table" id="advancesTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Employee</th>
+                <th>Transaction</th>
+                <th>Amount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="advancesTbody">
+              <tr><td colspan="5" class="tbl-empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -475,22 +499,32 @@
   <div class="modal-overlay" id="advModal" style="display:none">
     <div class="modal glass-card">
       <div class="modal-header">
-        <h3 id="advModalTitle">Grant Advance</h3>
+        <h3 id="advModalTitle">New Transaction</h3>
         <button class="modal-close" onclick="Advances.closeModal()"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
         <label class="form-label">Employee *</label>
         <select class="form-select" id="advEmpId"></select>
+        
+        <label class="form-label">Transaction Type *</label>
+        <select class="form-select" id="advType">
+          <option value="given">Given Cash (Advance Paid Out)</option>
+          <option value="deduction">Salary Deduction (Forced Repayment)</option>
+          <option value="repayment">Cash Repayment (Out of Pocket)</option>
+        </select>
+
         <label class="form-label">Date *</label>
         <input class="form-input" id="advDate" type="date" />
+        
         <label class="form-label">Amount (PKR) *</label>
         <input class="form-input" id="advAmount" type="number" step="0.01" placeholder="5000" />
+        
         <label class="form-label">Notes</label>
         <input class="form-input" id="advNotes" type="text" placeholder="Emergency fund" />
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="Advances.closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="Advances.save()">Grant Advance</button>
+        <button class="btn btn-primary" onclick="Advances.save()">Save Transaction</button>
       </div>
     </div>
   </div>

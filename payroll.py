@@ -298,7 +298,7 @@ def get_monthly_summary(employee_id, month):
     # Fetch advances
     conn = db.get_db()
     advances_rows = conn.execute(
-        "SELECT amount FROM advance_salaries WHERE employee_id=? AND strftime('%Y-%m',date)=?",
+        "SELECT amount FROM advance_salaries WHERE employee_id=? AND strftime('%Y-%m',date)=? AND type IN ('given', 'deduction')",
         (employee_id, month)
     ).fetchall()
     conn.close()
