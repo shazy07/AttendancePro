@@ -237,9 +237,14 @@
           <h1 class="page-h1">Advance Ledger</h1>
           <p class="page-sub">Track balances and transaction history</p>
         </div>
-        <button class="btn btn-primary" onclick="Advances.openAdd()">
-          <i class="ri-add-circle-line"></i> New Transaction
-        </button>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-outline" onclick="Advances.printReport()">
+            <i class="ri-printer-line"></i> Print History Report
+          </button>
+          <button class="btn btn-primary" onclick="Advances.openAdd()">
+            <i class="ri-add-circle-line"></i> New Transaction
+          </button>
+        </div>
       </div>
 
       <div class="holidays-layout">

@@ -168,5 +168,17 @@ const Advances = (() => {
     }
   }
 
-  return { init, loadLedger, loadHistory, openAdd, closeModal, save, del };
+  async function printReport() {
+    const month = document.getElementById('advMonthFilter').value;
+    Toast.info('Generating PDF...');
+    const res = await API.post('/api/reports/advance-history', { month });
+    if (res.ok) {
+      window.open(res.data.url, '_blank');
+      Toast.success('PDF generated!');
+    } else {
+      Toast.error(res.error || 'Failed to generate report');
+    }
+  }
+
+  return { init, loadLedger, loadHistory, openAdd, closeModal, save, del, printReport };
 })();

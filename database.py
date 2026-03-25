@@ -87,6 +87,11 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
+    try:
+        c.execute("ALTER TABLE advance_salaries ADD COLUMN notes TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
+
     c.execute('''CREATE TABLE IF NOT EXISTS payroll_summary (
         id                     INTEGER PRIMARY KEY AUTOINCREMENT,
         employee_id            INTEGER NOT NULL,

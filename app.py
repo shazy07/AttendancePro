@@ -751,6 +751,20 @@ def report_monthly_pulse():
         return err(str(e))
 
 
+@app.route('/api/reports/advance-history', methods=['POST'])
+@login_required
+def report_advance_history():
+    d = request.json or {}
+    month = d.get('month', '')
+    try:
+        res = rp.generate_advance_history(month if month else None)
+        fname = os.path.basename(res['pdf'])
+        return ok({'url': f'/reports/{fname}', 'filename': fname})
+    except Exception as e:
+        logger.exception(e)
+        return err(str(e))
+
+
 @app.route('/api/reports/company-ledger', methods=['POST'])
 @login_required
 def report_company_ledger():

@@ -418,3 +418,125 @@ def generate_company_ledger(months_back=3):
     ]
     doc.build(elements)
     return {'pdf': pdf_path, 'csv': csv_path}
+
+
+# ── Advance Ledger & History ─────────────────────────────────────────────────────────────
+
+def generate_advance_history(month=None):
+    today = date.today()
+    ts    = today.strftime('%Y-%m-%d')
+    suffix= f"_{month}" if month else ""
+    doc, pdf_path = _base_doc(f'advance_history_{ts}{suffix}.pdf', A4)
+    
+    conn = db.get_db()
+    
+    # Master Ledger
+    ledger_query = '''
+        SELECT e.name as emp_name,
+            COALESCE(SUM(CASE WHEN a.type = 'given' THEN a.amount ELSE 0 END), 0) as total_given,
+            COALESCE(SUM(CASE WHEN a.type != 'given' THEN a.amount ELSE 0 END), 0) as total_repaid
+        FROM employees e
+        LEFT JOIN advance_salaries a ON e.id = a.employee_id
+        WHERE e.is_active = 1
+        GROUP BY e.id
+        HAVING total_given > 0 OR total_repaid > 0
+        ORDER BY e.name
+    '''
+    ledger = db.rows_to_list(conn.execute(ledger_query).fetchall())
+    
+    # History
+    hist_query = '''
+        SELECT a.date, a.amount, a.type, a.notes, e.name as emp_name
+        FROM advance_salaries a
+        JOIN employees e ON a.employee_id = e.id
+    '''
+    params = []
+    if month:
+        hist_query += " WHERE strftime('%Y-%m', a.date) = ?"
+        params.append(month)
+    
+    hist_query += " ORDER BY a.date DESC"
+    history = db.rows_to_list(conn.execute(hist_query, params).fetchall())
+    conn.close()
+    
+    elements = [
+        _header_table('Employee Advance History', f'Month: {month}' if month else 'All-Time Records'),
+        Spacer(1, 0.3*cm),
+        HRFlowable(width='100%', color=C_PURPLE, thickness=1.5),
+        Spacer(1, 0.5*cm)
+    ]
+    
+    styles = getSampleStyleSheet()
+    h3 = ParagraphStyle('h3', parent=styles['Heading3'], textColor=C_PURPLE)
+    
+    # 1. Outstanding Balances Table
+    elements.append(Paragraph("Master Ledger (Outstanding Balances)", h3))
+    elements.append(Spacer(1, 0.2*cm))
+    
+    if not ledger:
+        elements.append(Paragraph("No outstanding advance balances.", styles['Normal']))
+    else:
+        l_header = ['Employee', 'Total Given (PKR)', 'Total Recovered (PKR)', 'Net Debt (PKR)']
+        l_data   = [l_header]
+        for r in ledger:
+            bal = float(r['total_given']) - float(r['total_repaid'])
+            l_data.append([
+                r['emp_name'],
+                f"{float(r['total_given']):,.2f}",
+                f"{float(r['total_repaid']):,.2f}",
+                f"{bal:,.2f}"
+            ])
+            
+        t_ledger = Table(l_data, colWidths=[6.5*cm, 3.8*cm, 4.2*cm, 3.5*cm])
+        t_ledger.setStyle(TableStyle([
+            ('BACKGROUND',    (0,0), (-1,0),  C_PURPLE),
+            ('TEXTCOLOR',     (0,0), (-1,0),  colors.white),
+            ('FONTNAME',      (0,0), (-1,0),  'Helvetica-Bold'),
+            ('FONTSIZE',      (0,0), (-1,-1), 9),
+            ('ALIGN',         (1,0), (-1,-1), 'RIGHT'),
+            ('ROWBACKGROUNDS',(0,1), (-1,-1), [C_LIGHT, C_ROW_ALT]),
+            ('GRID',          (0,0), (-1,-1), 0.3, colors.HexColor('#e2e8f0')),
+            ('TOPPADDING',    (0,0), (-1,-1), 5), ('BOTTOMPADDING',(0,0), (-1,-1), 5),
+        ]))
+        elements.append(t_ledger)
+        
+    elements.append(Spacer(1, 0.8*cm))
+    
+    # 2. Transaction History Table
+    elements.append(Paragraph("Transaction History", h3))
+    elements.append(Spacer(1, 0.2*cm))
+    
+    if not history:
+        elements.append(Paragraph("No advance transactions found.", styles['Normal']))
+    else:
+        h_header = ['Date', 'Employee', 'Type', 'Amount (PKR)', 'Notes']
+        h_data   = [h_header]
+        
+        for r in history:
+            t_label = "Given Cash"
+            if r['type'] == 'deduction': t_label = "Salary Deduction"
+            elif r['type'] == 'repayment': t_label = "Repayment"
+            
+            h_data.append([
+                r['date'],
+                r['emp_name'],
+                t_label,
+                f"{float(r['amount']):,.2f}",
+                r['notes'] or ''
+            ])
+            
+        t_hist = Table(h_data, colWidths=[2.5*cm, 4.5*cm, 3.5*cm, 3.5*cm, 4*cm])
+        t_hist.setStyle(TableStyle([
+            ('BACKGROUND',    (0,0), (-1,0),  C_PURPLE),
+            ('TEXTCOLOR',     (0,0), (-1,0),  colors.white),
+            ('FONTNAME',      (0,0), (-1,0),  'Helvetica-Bold'),
+            ('FONTSIZE',      (0,0), (-1,-1), 8),
+            ('ALIGN',         (3,0), (3,-1),  'RIGHT'),
+            ('ROWBACKGROUNDS',(0,1), (-1,-1), [C_LIGHT, C_ROW_ALT]),
+            ('GRID',          (0,0), (-1,-1), 0.3, colors.HexColor('#e2e8f0')),
+            ('TOPPADDING',    (0,0), (-1,-1), 5), ('BOTTOMPADDING',(0,0), (-1,-1), 5),
+        ]))
+        elements.append(t_hist)
+        
+    doc.build(elements)
+    return {'pdf': pdf_path}
