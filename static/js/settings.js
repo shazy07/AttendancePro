@@ -47,5 +47,35 @@ const Settings = (() => {
         else Toast.error(res.error || 'Failed to create shortcut');
     }
 
-    return { load, save, createShortcut };
+    async function recalculateAttendance() {
+        const start = document.getElementById('s_fix_start').value;
+        const end = document.getElementById('s_fix_end').value;
+        const hours = document.getElementById('s_fix_hours').value;
+        
+        if (!start || !end || !hours) {
+            Toast.error('Please fill all fields for Data Correction');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to permanently change required hours to ${hours} for all present/absent records between ${start} and ${end}?`)) {
+            return;
+        }
+        
+        const res = await API.post('/api/settings/recalculate', {
+            start_date: start,
+            end_date: end,
+            hours: parseFloat(hours)
+        });
+        
+        if (res.ok) {
+            Toast.success(`Successfully corrected ${res.data.updated} records!`);
+            // Clear inputs
+            document.getElementById('s_fix_start').value = '';
+            document.getElementById('s_fix_end').value = '';
+        } else {
+            Toast.error(res.error || 'Failed to recalculate attendance');
+        }
+    }
+
+    return { load, save, createShortcut, recalculateAttendance };
 })();

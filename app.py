@@ -803,6 +803,46 @@ def create_shortcut():
         logger.exception(e)
         return err(str(e))
 
+@app.route('/api/settings/recalculate', methods=['POST'])
+@login_required
+def recalculate_attendance():
+    """Retroactively corrects required_hours and debt_minutes for a date range."""
+    d = request.json or {}
+    start_date = d.get('start_date')
+    end_date = d.get('end_date')
+    try:
+        hours = float(d.get('hours', 11.5))
+    except ValueError:
+        return err('Invalid hours')
+        
+    if not start_date or not end_date or hours <= 0:
+        return err('Valid Start Date, End Date, and Hours are required.')
+
+    conn = db.get_db()
+    
+    # We only update attendance records that actually have a clock_in / total_hours (status=present)
+    rows = conn.execute('''
+        SELECT employee_id, date, total_hours 
+        FROM attendance 
+        WHERE date >= ? AND date <= ? AND status IN ('present', 'absent')
+    ''', (start_date, end_date)).fetchall()
+    
+    updated = 0
+    for r in rows:
+        th = float(r.get('total_hours') or 0.0)
+        new_debt = int((th - hours) * 60)
+        
+        conn.execute('''
+            UPDATE attendance 
+            SET required_hours = ?, debt_minutes = ? 
+            WHERE employee_id = ? AND date = ?
+        ''', (hours, new_debt, r['employee_id'], r['date']))
+        updated += 1
+        
+    conn.commit()
+    conn.close()
+    return ok({'updated': updated})
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

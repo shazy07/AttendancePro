@@ -412,6 +412,20 @@
         </div>
 
         <div class="glass-card">
+          <h3 class="card-title"><i class="ri-history-line"></i> Data Correction</h3>
+          <p class="hint-text">Retroactively fix required hours for past dates. Use this if you forgot to toggle Ramadan mode and want to repair past calculations.</p>
+          <label class="form-label">Start Date</label>
+          <input class="form-input" id="s_fix_start" type="date" />
+          <label class="form-label">End Date</label>
+          <input class="form-input" id="s_fix_end" type="date" />
+          <label class="form-label">Correct Required Hours</label>
+          <input class="form-input" id="s_fix_hours" type="number" step="0.5" value="11.5" />
+          <button class="btn btn-outline btn-full" onclick="Settings.recalculateAttendance()" style="margin-top:12px; color:var(--amber); border-color:var(--amber)">
+            <i class="ri-refresh-line"></i> Recalculate Past Debt
+          </button>
+        </div>
+
+        <div class="glass-card">
           <h3 class="card-title"><i class="ri-shortcut-line"></i> Desktop Access</h3>
           <p class="hint-text">Create a shortcut on your desktop for quick access.</p>
           <button class="btn btn-outline btn-full" onclick="Settings.createShortcut()">
