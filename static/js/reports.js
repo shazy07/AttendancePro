@@ -83,29 +83,36 @@ const Reports = (() => {
     async function confirmSalaryWizard() {
         const newDeduct = parseFloat(document.getElementById('swNewDeduction').value) || 0;
         
-        if (newDeduct > 0) {
-            const body = {
+        await _runBtn('btnDeepDive', 'Issuing Salary…', async () => {
+            document.getElementById('salaryWizardModal').style.display = 'none';
+
+            // Permanently issue the salary and apply any deduction
+            const resIssue = await API.post('/api/payroll/issue', {
                 employee_id: parseInt(_wizardEid),
-                type: 'deduction',
-                date: new Date().toISOString().slice(0, 10), // Use today's date for deduction record
-                amount: newDeduct,
-                notes: 'Salary Deduction strictly applied during ' + _wizardMonth + ' payroll generation.'
-            };
-            const res = await API.post('/api/advances', body);
-            if (!res.ok) { Toast.error('Failed to log deduction'); return; }
-            Toast.success(`Successfully deducted ${newDeduct} PKR`);
-        }
-        
-        document.getElementById('salaryWizardModal').style.display = 'none';
-        
-        // Now print the PDF
-        await _runBtn('btnDeepDive', 'Generating Slip…', async () => {
-            const res = await API.post('/api/reports/employee-deep-dive', { employee_id: parseInt(_wizardEid), month: _wizardMonth });
+                month: _wizardMonth,
+                deduction: newDeduct
+            });
+
+            if (!resIssue.ok) {
+                Toast.error(resIssue.error || 'Failed to issue salary');
+                return;
+            }
+
+            if (newDeduct > 0) {
+                Toast.success(`Successfully deducted ${newDeduct} PKR`);
+            }
+
+            // Generate and open the PDF slip
+            const res = await API.post('/api/reports/employee-deep-dive', { 
+                employee_id: parseInt(_wizardEid), 
+                month: _wizardMonth 
+            });
+            
             if (res.ok) {
                 window.open(res.data.url, '_blank');
-                Toast.success('Salary Slip PDF ready!');
+                Toast.success('Salary Issued & Slip ready!');
             } else {
-                Toast.error(res.error || 'Failed to generate report');
+                Toast.error(res.error || 'Failed to generate slip');
             }
         });
     }

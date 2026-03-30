@@ -74,6 +74,7 @@ const PAGES = {
   'dashboard': { title: 'Dashboard', init: () => Dashboard.init() },
   'employees': { title: 'Employees', init: () => Employees.load() },
   'advances':  { title: 'Advance Salaries', init: () => Advances.init() },
+  'payroll':   { title: 'Payroll History', init: () => { window.Payroll.init(); window.Payroll.load(); } },
   'holidays':  { title: 'Holidays', init: () => Holidays.load() },
   'reports':   { title: 'Report Hub', init: () => Reports.init() },
   'settings':  { title: 'Settings', init: () => Settings.load() },

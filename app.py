@@ -782,6 +782,90 @@ def report_company_ledger():
         return err(str(e))
 
 
+# ── Payroll History & Issuance ──────────────────────────────────────────────
+
+@app.route('/api/payroll/issue', methods=['POST'])
+@login_required
+def issue_salary():
+    d = request.json or {}
+    eid = d.get('employee_id')
+    month = d.get('month')
+    deduction = float(d.get('deduction', 0.0))
+    
+    if not eid or not month:
+        return err('employee_id and month required')
+        
+    s = pl.get_monthly_summary(eid, month)
+    if not s:
+        return err('Summary not found for this employee/month')
+        
+    conn = db.get_db()
+    
+    # 1. Insert advance deduction into the ledger if a new one was applied in the wizard
+    if deduction > 0:
+        conn.execute(
+            '''INSERT INTO advance_salaries (employee_id, date, amount, type, notes)
+               VALUES (?, ?, ?, 'deduction', ?)''',
+            (eid, date.today().strftime('%Y-%m-%d'), deduction, f'Salary Wizard Deduction for {month}')
+        )
+        conn.commit()
+        # Re-fetch summary to get updated net salary
+        s = pl.get_monthly_summary(eid, month)
+
+    # 2. Upsert payroll_summary
+    conn.execute('''
+        INSERT INTO payroll_summary 
+        (employee_id, month, total_required_hours, total_worked_hours, surplus_hours, short_hours, deduction_amount, net_salary, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'paid')
+        ON CONFLICT(employee_id, month) DO UPDATE SET
+        total_required_hours=excluded.total_required_hours,
+        total_worked_hours=excluded.total_worked_hours,
+        surplus_hours=excluded.surplus_hours,
+        short_hours=excluded.short_hours,
+        deduction_amount=excluded.deduction_amount,
+        net_salary=excluded.net_salary,
+        status='paid'
+    ''', (
+        eid, month, 
+        s.get('total_required_hours', 0), 
+        s.get('total_worked_hours', 0), 
+        s.get('surplus_hours', 0), 
+        s.get('short_hours', 0), 
+        s.get('advance_deductions', 0), 
+        s.get('net_salary', 0)
+    ))
+    conn.commit()
+    conn.close()
+    
+    return ok({'status': 'paid'})
+
+
+@app.route('/api/payroll/history', methods=['GET'])
+@login_required
+def get_payroll_history():
+    month = request.args.get('month')
+    conn = db.get_db()
+    
+    query = '''
+        SELECT p.id, p.employee_id, p.month, p.total_required_hours, p.total_worked_hours,
+               p.surplus_hours, p.short_hours, p.deduction_amount, p.net_salary, p.status,
+               e.name as employee_name, e.designation
+        FROM payroll_summary p
+        JOIN employees e ON p.employee_id = e.id
+        WHERE p.status = 'paid'
+    '''
+    params = []
+    if month:
+        query += " AND p.month = ?"
+        params.append(month)
+        
+    query += " ORDER BY p.month DESC, e.name ASC"
+    rows = db.rows_to_list(conn.execute(query, params).fetchall())
+    conn.close()
+    
+    return ok(rows)
+
+
 # ── Misc ────────────────────────────────────────────────────────────────────────
 @app.route('/api/system/info')
 @login_required

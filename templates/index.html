@@ -51,6 +51,9 @@
       <a href="#advances" class="nav-item" data-page="advances">
         <i class="ri-money-dollar-circle-line"></i><span>Advances</span>
       </a>
+      <a href="#payroll" class="nav-item" data-page="payroll">
+        <i class="ri-bank-card-line"></i><span>Payroll History</span>
+      </a>
       <a href="#reports" class="nav-item" data-page="reports">
         <i class="ri-file-chart-line"></i><span>Report Hub</span>
       </a>
@@ -287,6 +290,42 @@
             </thead>
             <tbody id="advancesTbody">
               <tr><td colspan="5" class="tbl-empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ PAYROLL HISTORY ══ -->
+    <section class="page" id="page-payroll" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-h1">Payroll History</h1>
+          <p class="page-sub">View formal ledger of historically issued salaries</p>
+        </div>
+      </div>
+      <div class="glass-card" style="overflow:hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:0 5px;">
+          <h2 class="section-title" style="margin:0">Issued Salaries</h2>
+          <input type="month" class="form-input" id="payrollMonthFilter" style="width:200px" onchange="window.Payroll.load()" />
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Employee</th>
+                <th style="text-align:right">R. Hours</th>
+                <th style="text-align:right">W. Hours</th>
+                <th style="text-align:right">Short/Surp</th>
+                <th style="text-align:right">Deduction</th>
+                <th style="text-align:right">Net Paid (PKR)</th>
+              </tr>
+            </thead>
+            <tbody id="payrollTbody">
+              <tr>
+                <td colspan="7" class="tbl-empty">Loading…</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -682,6 +721,7 @@
   <script src="/static/js/dashboard.js?v=2"></script>
   <script src="/static/js/employees.js?v=2"></script>
   <script src="/static/js/advances.js?v=2"></script>
+  <script src="/static/js/payroll.js?v=2"></script>
   <script src="/static/js/holidays.js?v=2"></script>
   <script src="/static/js/reports.js?v=2"></script>
   <script src="/static/js/settings.js?v=2"></script>
