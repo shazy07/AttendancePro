@@ -365,9 +365,14 @@
             <option value="">Select employee…</option>
           </select>
           <input type="month" class="form-input" id="reportMonth" style="margin-bottom:12px" />
-          <button class="btn btn-primary btn-full" onclick="Reports.deepDive()" id="btnDeepDive">
-            <i class="ri-download-line"></i> Generate PDF
-          </button>
+          <div style="display:flex; flex-direction:column; gap:8px">
+            <button class="btn btn-outline btn-full" onclick="Reports.deepDivePreview()" id="btnDeepDiveView">
+              <i class="ri-eye-line"></i> View Report Only
+            </button>
+            <button class="btn btn-primary btn-full" onclick="Reports.deepDiveWizard()" id="btnDeepDiveIssue">
+              <i class="ri-secure-payment-line"></i> Issue Salary
+            </button>
+          </div>
         </div>
 
         <!-- Monthly Pulse -->
@@ -702,7 +707,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" style="width:100%" onclick="Reports.confirmSalaryWizard()">Save Deduction & Print Slip</button>
+        <button class="btn btn-primary" style="width:100%" id="btnConfirmSalary" onclick="Reports.confirmSalaryWizard()">Save Deduction & Print Slip</button>
       </div>
     </div>
   </div>

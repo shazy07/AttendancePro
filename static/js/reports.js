@@ -51,7 +51,24 @@ const Reports = (() => {
     let _wizardGross = 0;
     let _wizardDeducted = 0;
 
-    async function deepDive() {
+    async function deepDivePreview() {
+        const eid = document.getElementById('reportEmpSel').value;
+        const month = document.getElementById('reportMonth').value;
+        if (!eid) { Toast.error('Please select an employee'); return; }
+        if (!month) { Toast.error('Please select a month'); return; }
+
+        await _runBtn('btnDeepDiveView', 'Generating…', async () => {
+            const res = await API.post('/api/reports/employee-deep-dive', { employee_id: parseInt(eid), month: month });
+            if (res.ok) {
+                window.open(res.data.url, '_blank');
+                Toast.success('Preview ready!');
+            } else {
+                Toast.error(res.error || 'Failed to generate preview');
+            }
+        });
+    }
+
+    async function deepDiveWizard() {
         const eid = document.getElementById('reportEmpSel').value;
         const month = document.getElementById('reportMonth').value;
         if (!eid) { Toast.error('Please select an employee'); return; }
@@ -83,7 +100,7 @@ const Reports = (() => {
     async function confirmSalaryWizard() {
         const newDeduct = parseFloat(document.getElementById('swNewDeduction').value) || 0;
         
-        await _runBtn('btnDeepDive', 'Issuing Salary…', async () => {
+        await _runBtn('btnConfirmSalary', 'Issuing Salary…', async () => {
             document.getElementById('salaryWizardModal').style.display = 'none';
 
             // Permanently issue the salary and apply any deduction
@@ -156,7 +173,7 @@ const Reports = (() => {
         else Toast.error(res.error || 'Email failed — check settings');
     }
 
-    return { init, dailyPulse, deepDive, updateWizardNet, confirmSalaryWizard, monthlyPulse, companyLedger, testEmail };
+    return { init, dailyPulse, deepDivePreview, deepDiveWizard, updateWizardNet, confirmSalaryWizard, monthlyPulse, companyLedger, testEmail };
 })();
 
 /* Spin animation for loading icon */
