@@ -268,6 +268,54 @@ def get_monthly_summary(employee_id, month):
                     'notes': ''
                 })
 
+    # ── Sandwiched Friday Rule ───────────────────────────────────
+    # If absent on Thursday or Saturday, the Friday becomes absent.
+    import calendar
+    year, mon = int(month[:4]), int(month[5:7])
+    _, last_day = calendar.monthrange(year, mon)
+    today = date.today()
+    
+    row_by_date = {r['date']: r for r in rows}
+    
+    for day in range(1, last_day + 1):
+        d = date(year, mon, day)
+        if d > today:
+            break
+            
+        if d.weekday() == 4: # Friday
+            wd_str = d.strftime('%Y-%m-%d')
+            thu_str = (d - timedelta(days=1)).strftime('%Y-%m-%d')
+            sat_str = (d + timedelta(days=1)).strftime('%Y-%m-%d')
+            
+            thu_row = row_by_date.get(thu_str)
+            thu_absent = thu_row and thu_row['status'] == 'absent'
+            
+            sat_row = row_by_date.get(sat_str)
+            sat_absent = sat_row and sat_row['status'] == 'absent'
+            
+            if thu_absent or sat_absent:
+                fri_row = row_by_date.get(wd_str)
+                if fri_row and fri_row['status'] != 'absent':
+                    continue
+                if first_record_date and wd_str < first_record_date:
+                    continue
+                    
+                req_h = get_required_hours(d)
+                if fri_row:
+                    fri_row['status'] = 'absent'
+                    fri_row['required_hours'] = req_h
+                    fri_row['debt_minutes'] = -int(req_h * 60)
+                else:
+                    new_fri = {
+                        'id': None, 'employee_id': employee_id, 'date': wd_str,
+                        'clock_in': None, 'clock_out': None, 'total_hours': 0.0,
+                        'required_hours': req_h, 'status': 'absent',
+                        'debt_minutes': -int(req_h * 60), 'is_holiday_work': 0,
+                        'overtime_multiplier': 1.0, 'notes': 'Sandwich Rule Penalty'
+                    }
+                    rows.append(new_fri)
+                    row_by_date[wd_str] = new_fri
+
     # Sort rows chronologically so reports match perfectly
     rows.sort(key=lambda x: x['date'])
 
